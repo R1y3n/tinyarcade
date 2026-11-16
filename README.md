@@ -118,6 +118,33 @@ The published APK is signed with a local debug key. It is intended for sideloadi
 
 <br>
 
+## Nightly build (size experiment)
+
+<table>
+<tr>
+<td width="116" valign="top"><img src="assets/icon-nightly.svg" width="96" alt="TinyChess Nightly purple icon"></td>
+<td valign="top">
+
+The nightly APK installs **alongside** stable as `com.tiny.chess.nightly`, so it never replaces or updates the release build. It has its own purple icon.
+
+This variant tests a much smaller **installed** footprint by telling ART not to AOT-compile the app:
+
+- `android:vmSafeMode="true"` disables ART AOT compilation.
+- `android:useEmbeddedDex="true"` runs the DEX directly from the APK.
+- `classes.dex` is stored uncompressed and 4-byte aligned for direct loading.
+
+On the test device the installed footprint is **61 KB** with no `oat/` artifacts, versus the multi-megabyte footprint reported after a normal AOT install. The APK itself is slightly larger (**53 KB**) because the DEX is not compressed.
+
+**Trade-off:** without AOT, startup and engine search are slower. This is a test build, not a replacement for stable.
+
+**[Download the nightly prerelease](https://github.com/R1y3n/tinychess/releases/tag/nightly)**
+
+</td>
+</tr>
+</table>
+
+<br>
+
 ## Build from source
 
 ### Requirements
@@ -132,10 +159,12 @@ The published APK is signed with a local debug key. It is intended for sideloadi
 git clone https://github.com/R1y3n/tinychess.git
 cd tinychess
 export ANDROID_HOME="$HOME/Android/Sdk"
-./build.sh
+
+./build.sh stable    # -> tinychess.apk
+./build.sh nightly   # -> tinychess-nightly.apk
 ```
 
-The script compiles the vector resources with `aapt2`, compiles Java directly against `android.jar`, converts the classes with `d8`, packs the DEX, aligns the archive with `zipalign` and signs it with `apksigner`. The result is `tinychess.apk`.
+The script compiles the vector resources with `aapt2`, compiles Java directly against `android.jar`, converts the classes with `d8`, packs the DEX, aligns the archive with `zipalign` and signs it with `apksigner`. Running without an argument builds the stable variant.
 
 If `debug.keystore` is missing, `build.sh` generates one automatically. Never reuse a debug key for a production release.
 
@@ -150,10 +179,14 @@ tinychess/
 ├── res/
 │   ├── drawable/                # adaptive icon vectors
 │   └── mipmap-anydpi-v26/
+├── nightly/
+│   ├── AndroidManifest.xml      # com.tiny.chess.nightly + no-AOT flags
+│   └── res/                     # purple adaptive icon
 ├── src/com/tiny/chess/
 │   └── MainActivity.java        # UI, engine, persistence, audio
 ├── assets/
-│   └── banner.svg               # README art
+│   ├── banner.svg               # README art
+│   └── icon-nightly.svg         # nightly icon art
 └── README.md
 ```
 
