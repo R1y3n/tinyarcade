@@ -133,7 +133,7 @@ This variant tests a much smaller **installed** footprint by telling ART not to 
 - `android:useEmbeddedDex="true"` runs the DEX directly from the APK.
 - `classes.dex` is stored uncompressed and 4-byte aligned for direct loading.
 
-On the test device the installed footprint is **61 KB** with no `oat/` artifacts, versus the multi-megabyte footprint reported after a normal AOT install. The APK itself is slightly larger (**53 KB**) because the DEX is not compressed.
+On the test device, Android Settings reports **6.4 MB** of storage for stable and **149 KB** for nightly — roughly **43x smaller**. The nightly code directory is 61 KB with no `oat/` artifacts. The APK itself is slightly larger (**53 KB**) because the DEX is not compressed.
 
 **Trade-off:** without AOT, startup and engine search are slower. This is a test build, not a replacement for stable.
 
