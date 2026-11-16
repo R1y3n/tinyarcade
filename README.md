@@ -21,6 +21,7 @@
   ![Dependencies](https://img.shields.io/badge/Dependencies-0-2E6B4E?style=flat-square)
   ![Java](https://img.shields.io/badge/Java-pure_Android_API-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
   ![Offline](https://img.shields.io/badge/Offline-100%25-2E6B4E?style=flat-square)
+  [![Roadmap](https://img.shields.io/badge/Roadmap-Whats_next-A78BFA?style=flat-square)](#the-tiny-arcade-is-growing)
 </div>
 
 ---
@@ -104,6 +105,36 @@ Tap the **TinyChess** title on the start screen ten times. That is all we will s
 
 <br>
 
+## The tiny arcade is growing
+
+TinyChess is only the first cabinet. The same zero-bloat philosophy is expanding into a pocket arcade: **checkers**, **Power of 4**, and the one everybody keeps asking for — **chess against a human**.
+
+<table>
+<tr>
+<td width="33.33%" valign="top">
+  <img src="assets/roadmap-checkers.svg" width="100%" alt="Incoming: Checkers with local and online multiplayer">
+</td>
+<td width="33.33%" valign="top">
+  <img src="assets/roadmap-power4.svg" width="100%" alt="Incoming: Power of 4 with local and online multiplayer">
+</td>
+<td width="33.33%" valign="top">
+  <img src="assets/roadmap-multiplayer.svg" width="100%" alt="Incoming: TinyChess human versus human multiplayer">
+</td>
+</tr>
+</table>
+
+### Incoming in a future update
+
+- **Checkers** — the diagonal duel, rebuilt from scratch. Local and online multiplayer are planned, with the same instant-start, no-account experience as chess.
+- **Power of 4** — drop, connect, repeat. Seven columns, six rows, four in a row, and another excuse to challenge a friend.
+- **TinyChess Multiplayer** — human versus human, at last. The board, engine room and interface you already know, built for real opponents instead of bots.
+
+These games are **planned, not shipped**. The source tree only reserves empty `checkers/` and `powerof4/` packages so the games can sit side-by-side with chess when the bundle is ready. There is no placeholder gameplay, no fake launch button and no release date — just a direction: **more games, same tiny footprint.**
+
+Want to be there when it lands? Star the repo and watch Releases.
+
+<br>
+
 ## Install
 
 1. Download the latest APK from **[Releases](https://github.com/R1y3n/tinychess/releases/latest)**.
@@ -182,11 +213,17 @@ tinychess/
 ├── nightly/
 │   ├── AndroidManifest.xml      # com.tiny.chess.nightly + no-AOT flags
 │   └── res/                     # purple adaptive icon
-├── src/com/tiny/chess/
-│   └── MainActivity.java        # UI, engine, persistence, audio
+├── src/com/tiny/
+│   ├── chess/
+│   │   └── MainActivity.java    # UI, engine, persistence, audio
+│   ├── checkers/                # empty stub for the incoming game
+│   └── powerof4/                # empty stub for the incoming game
 ├── assets/
 │   ├── banner.svg               # README art
-│   └── icon-nightly.svg         # nightly icon art
+│   ├── icon-nightly.svg         # nightly icon art
+│   ├── roadmap-checkers.svg     # incoming Checkers card
+│   ├── roadmap-power4.svg       # incoming Power of 4 card
+│   └── roadmap-multiplayer.svg  # incoming chess multiplayer card
 └── README.md
 ```
 

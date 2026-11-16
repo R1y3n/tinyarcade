@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" aria-label="Checkers: an incoming TinyChess game with local and online multiplayer">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101216"/>
+      <stop offset="0.55" stop-color="#181B21"/>
+      <stop offset="1" stop-color="#0B0D10"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.2" r="0.72">
+      <stop offset="0" stop-color="#E2644E" stop-opacity="0.24"/>
+      <stop offset="0.55" stop-color="#E2644E" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F08A73"/>
+      <stop offset="1" stop-color="#C44D39"/>
+    </linearGradient>
+    <pattern id="board" width="50" height="50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="#D8B98C"/>
+      <rect width="25" height="25" fill="#5C3D2E"/>
+      <rect x="25" y="25" width="25" height="25" fill="#5C3D2E"/>
+    </pattern>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <rect width="640" height="420" rx="24" fill="url(#bg)"/>
+  <rect width="640" height="420" rx="24" fill="url(#glow)"/>
+  <rect x="1" y="1" width="638" height="418" rx="23" fill="none" stroke="#2A2F38" stroke-width="2"/>
+
+  <g opacity="0.10" stroke="#6B7686" stroke-width="1">
+    <path d="M0 84h640M0 168h640M0 252h640M0 336h640"/>
+    <path d="M80 0v420M160 0v420M240 0v420M320 0v420M400 0v420M480 0v420M560 0v420"/>
+  </g>
+
+  <text x="44" y="50" fill="#F08A73" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3.2">INCOMING · GAME 02</text>
+  <text x="44" y="112" fill="#F7F8FA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.2">Checkers</text>
+  <text x="44" y="143" fill="#C3CBD7" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="400">Classic diagonal strategy, rebuilt tiny.</text>
+
+  <g font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="500">
+    <circle cx="48" cy="194" r="4" fill="url(#accent)"/>
+    <text x="62" y="199" fill="#D8DEE8">Local &amp; online multiplayer</text>
+    <circle cx="48" cy="228" r="4" fill="url(#accent)"/>
+    <text x="62" y="233" fill="#D8DEE8">Fast, fair, diagonal duels</text>
+    <circle cx="48" cy="262" r="4" fill="url(#accent)"/>
+    <text x="62" y="267" fill="#D8DEE8">Same zero-bloat philosophy</text>
+  </g>
+
+  <g font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#E9D7B6">
+    <rect x="44" y="294" width="82" height="30" rx="15" fill="#1E232B" stroke="#3A3028"/>
+    <text x="85" y="313" text-anchor="middle">8 × 8</text>
+    <rect x="134" y="294" width="98" height="30" rx="15" fill="#1E232B" stroke="#3A3028"/>
+    <text x="183" y="313" text-anchor="middle">12 pieces</text>
+    <rect x="240" y="294" width="96" height="30" rx="15" fill="#1E232B" stroke="#3A3028"/>
+    <text x="288" y="313" text-anchor="middle">2 players</text>
+  </g>
+
+  <g transform="translate(394 48)">
+    <ellipse cx="100" cy="214" rx="96" ry="12" fill="#000000" opacity="0.38" filter="url(#soft)"/>
+    <g>
+      <rect width="200" height="200" fill="url(#board)"/>
+      <g fill="#D9543F" stroke="#F08A73" stroke-width="1.5">
+        <circle cx="12.5" cy="12.5" r="9.5"/><circle cx="62.5" cy="12.5" r="9.5"/><circle cx="112.5" cy="12.5" r="9.5"/><circle cx="162.5" cy="12.5" r="9.5"/>
+        <circle cx="37.5" cy="37.5" r="9.5"/><circle cx="87.5" cy="37.5" r="9.5"/><circle cx="137.5" cy="37.5" r="9.5"/><circle cx="187.5" cy="37.5" r="9.5"/>
+        <circle cx="12.5" cy="62.5" r="9.5"/><circle cx="62.5" cy="62.5" r="9.5"/><circle cx="112.5" cy="62.5" r="9.5"/><circle cx="162.5" cy="62.5" r="9.5"/>
+      </g>
+      <g fill="#B83E2C" opacity="0.65">
+        <circle cx="12.5" cy="12.5" r="3.2"/><circle cx="62.5" cy="12.5" r="3.2"/><circle cx="112.5" cy="12.5" r="3.2"/><circle cx="162.5" cy="12.5" r="3.2"/>
+        <circle cx="37.5" cy="37.5" r="3.2"/><circle cx="87.5" cy="37.5" r="3.2"/><circle cx="137.5" cy="37.5" r="3.2"/><circle cx="187.5" cy="37.5" r="3.2"/>
+        <circle cx="12.5" cy="62.5" r="3.2"/><circle cx="62.5" cy="62.5" r="3.2"/><circle cx="112.5" cy="62.5" r="3.2"/><circle cx="162.5" cy="62.5" r="3.2"/>
+      </g>
+      <g fill="#E9D7B6" stroke="#B68F5D" stroke-width="1.5">
+        <circle cx="37.5" cy="137.5" r="9.5"/><circle cx="87.5" cy="137.5" r="9.5"/><circle cx="137.5" cy="137.5" r="9.5"/><circle cx="187.5" cy="137.5" r="9.5"/>
+        <circle cx="12.5" cy="162.5" r="9.5"/><circle cx="62.5" cy="162.5" r="9.5"/><circle cx="112.5" cy="162.5" r="9.5"/><circle cx="162.5" cy="162.5" r="9.5"/>
+        <circle cx="37.5" cy="187.5" r="9.5"/><circle cx="87.5" cy="187.5" r="9.5"/><circle cx="137.5" cy="187.5" r="9.5"/><circle cx="187.5" cy="187.5" r="9.5"/>
+      </g>
+      <g fill="#B68F5D" opacity="0.55">
+        <circle cx="37.5" cy="137.5" r="3.2"/><circle cx="87.5" cy="137.5" r="3.2"/><circle cx="137.5" cy="137.5" r="3.2"/><circle cx="187.5" cy="137.5" r="3.2"/>
+        <circle cx="12.5" cy="162.5" r="3.2"/><circle cx="62.5" cy="162.5" r="3.2"/><circle cx="112.5" cy="162.5" r="3.2"/><circle cx="162.5" cy="162.5" r="3.2"/>
+        <circle cx="37.5" cy="187.5" r="3.2"/><circle cx="87.5" cy="187.5" r="3.2"/><circle cx="137.5" cy="187.5" r="3.2"/><circle cx="187.5" cy="187.5" r="3.2"/>
+      </g>
+      <circle cx="112.5" cy="162.5" r="13" fill="none" stroke="#F08A73" stroke-width="2" opacity="0.75"/>
+      <rect x="0.5" y="0.5" width="199" height="199" fill="none" stroke="#3D2418" stroke-width="2"/>
+    </g>
+    <text x="100" y="230" fill="#8D97A8" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" letter-spacing="2.4" text-anchor="middle">CAPTURE · PROMOTE · REPEAT</text>
+  </g>
+
+  <line x1="44" y1="346" x2="596" y2="346" stroke="#2A2F38" stroke-width="1"/>
+  <text x="44" y="378" fill="#8D97A8" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8">INCOMING FEATURE · NOT IN THE CURRENT APK</text>
+  <text x="596" y="378" fill="#F08A73" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8" text-anchor="end">TINYCHESS ROADMAP</text>
+</svg>
