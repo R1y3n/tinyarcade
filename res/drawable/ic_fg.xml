@@ -1,0 +1,28 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Subtle shadow -->
+    <path
+        android:fillColor="#44000000"
+        android:pathData="M34,82 A20,4 0 1,0 74,82 A20,4 0 1,0 34,82 Z"/>
+    <!-- Knight body -->
+    <path
+        android:fillColor="#FDFBF7"
+        android:strokeColor="#141414"
+        android:strokeWidth="2.4"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round"
+        android:pathData="M36,80 L72,80 L69,74 L65,70 C68,53 64,40 53,37 L51.5,33 L48,37 L45.5,33 L44,39 C39.5,43 36,48 36,52 C36.5,55 41,55 48.5,53 C44.5,58 42,63 41.5,70 L37,74 Z"/>
+    <!-- Base collar grooves -->
+    <path
+        android:strokeColor="#141414"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M38,74 L70,74 M42,70 L64,70"/>
+    <!-- Eye & nostril -->
+    <path
+        android:fillColor="#141414"
+        android:pathData="M42.5,44 A1.5,1.5 0 1,0 45.5,44 A1.5,1.5 0 1,0 42.5,44 Z M37.5,49.5 A1.1,1.1 0 1,0 39.7,49.5 A1.1,1.1 0 1,0 37.5,49.5 Z"/>
+</vector>

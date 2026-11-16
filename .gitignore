@@ -1,0 +1,27 @@
+# Build output
+/build/
+*.apk
+*.aab
+*.idsig
+*.apk.idsig
+
+# Signing keys and secrets (never commit these)
+debug.keystore
+*.keystore
+*.jks
+keystore.properties
+local.properties
+
+# Backup and temporary files
+*.bak
+*.orig
+*.rej
+*.tmp
+*.log
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
