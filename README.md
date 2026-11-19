@@ -1,274 +1,112 @@
 <div align="center">
-  <img src="assets/banner.svg" alt="TinyChess — a complete offline chess engine in 37 KB" width="100%">
+  <img src="assets/banner.svg" alt="TinyArcade — a tiny arcade for Android" width="100%">
 
   <br>
 
-  **A complete, offline chess game and engine for Android — in 37 KB.**
+  **Chess, Checkers and Power of 4 for Android — solo, local co-op, or online.**
 
-  <sub>Zero permissions &nbsp;·&nbsp; zero dependencies &nbsp;·&nbsp; zero native libraries &nbsp;·&nbsp; zero telemetry</sub>
+  <sub>No ads · no trackers · no account · no third-party libraries</sub>
 
   <br><br>
 
-  [![Download APK](https://img.shields.io/badge/Download_TinyChess_v1.0.0-D48837?style=for-the-badge&logo=android&logoColor=white)](https://github.com/R1y3n/tinychess/releases/latest)
-  [![Stars](https://img.shields.io/github/stars/R1y3n/tinychess?style=for-the-badge&color=2E6B4E&logo=github)](https://github.com/R1y3n/tinychess/stargazers)
-  [![Release](https://img.shields.io/github/v/release/R1y3n/tinychess?style=for-the-badge&color=3F628A)](https://github.com/R1y3n/tinychess/releases)
+  [![Download](https://img.shields.io/badge/Download_TinyArcade-v1.0.1-D48837?style=for-the-badge&logo=android&logoColor=white)](https://github.com/R1y3n/tinyarcade/releases/latest)
+  [![All-time downloads](https://img.shields.io/github/downloads/R1y3n/tinyarcade/total?style=for-the-badge&color=2E6B4E&logo=github&label=total_downloads)](https://github.com/R1y3n/tinyarcade/releases)
+  [![Stars](https://img.shields.io/github/stars/R1y3n/tinyarcade?style=for-the-badge&color=3F628A&logo=github)](https://github.com/R1y3n/tinyarcade/stargazers)
 
   <br>
 
-  ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
-  ![APK size](https://img.shields.io/badge/APK-37_KB-D48837?style=flat-square)
-  ![Permissions](https://img.shields.io/badge/Permissions-0-2E6B4E?style=flat-square)
-  ![Dependencies](https://img.shields.io/badge/Dependencies-0-2E6B4E?style=flat-square)
+  ![Android 4.0+](https://img.shields.io/badge/Android-4.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
+  ![APK size](https://img.shields.io/badge/APK-129_KB-D48837?style=flat-square)
+  ![Offline](https://img.shields.io/badge/Solo_%26_Co--op-Offline-2E6B4E?style=flat-square)
+  ![No dependencies](https://img.shields.io/badge/Dependencies-0-2E6B4E?style=flat-square)
   ![Java](https://img.shields.io/badge/Java-pure_Android_API-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
-  ![Offline](https://img.shields.io/badge/Offline-100%25-2E6B4E?style=flat-square)
-  [![Roadmap](https://img.shields.io/badge/Roadmap-Whats_next-A78BFA?style=flat-square)](#the-tiny-arcade-is-growing)
 </div>
 
 ---
 
-TinyChess is a full chess app and a from-scratch engine written in a single Java source file. It has no Gradle project, no AndroidX, no game assets, no network access and no ads. The entire APK is smaller than most app icons.
+TinyArcade is a small arcade built from scratch: a full chess engine, checkers, and Power of 4 in one APK. No Gradle, no AndroidX, no game assets, and no bundled libraries. The whole app is smaller than most launcher icons.
 
-It was built around one question: **how much chess can you fit into the smallest possible Android package?**
+## What's inside
 
-<br>
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### By the numbers
-
-| | |
+| Game | Highlights |
 |:--|:--|
-| **APK** | 37 KB |
-| **DEX** | ~42 KB uncompressed |
-| **Source** | 1 activity, 1 custom view |
-| **Permissions** | none |
-| **Third-party code** | none |
-| **Native libraries** | none |
-| **Min Android** | 8.0 (API 26) |
-| **Target Android** | 14 (API 34) |
+| **Chess** | Complete FIDE rules, four bot levels, PGN sharing, 10 board themes |
+| **Checkers** | Mandatory captures, multi-jumps, kings, four bot levels |
+| **Power of 4** | Seven columns, six rows, four-in-a-row, four bot levels |
 
-</td>
-<td width="50%" valign="top">
-
-### What you get
-
-- Complete FIDE ruleset
-- Four difficulty levels
-- Lossless undo
-- Crash-safe auto-save
-- PGN sharing
-- Procedural wood audio
-- Vector-rendered pieces
-- A hidden easter egg
-
-</td>
-</tr>
-</table>
-
-<br>
-
-## Features
-
-### Complete rules, no shortcuts
-
-Castling, en passant, pawn promotion, checks, checkmate, stalemate, the 50-move rule, threefold repetition and insufficient material are all implemented. Move generation uses a 0x88 board and every move is validated against king safety before it reaches the board.
-
-### Four genuinely different bots
-
-| Level | Search depth | Think budget | Character |
-|:--|:--:|:--:|:--|
-| **Easy** | 2 ply | 140 ms | Makes human-like mistakes |
-| **Medium** | 4 ply | 320 ms | Casual club player |
-| **Hard** | 6 ply | 680 ms | Punishes loose pieces |
-| **Expert** | 16 ply | 1450 ms | Full-strength tactical search |
-
-Easy and Medium intentionally add controlled imprecision at the root so the lower tiers feel different rather than simply slower.
-
-### Quality-of-life built in
-
-- **Lossless undo** — snapshot history restores the exact board, castling rights, en-passant square, clocks and hash; undoing also takes back the bot's reply.
-- **Crash-safe resume** — the session is written synchronously to `SharedPreferences` after every move and on every lifecycle exit. Force-stop the app mid-game and continue where you left off.
-- **PGN export** — share the complete game, with proper headers and SAN notation, through Android's share sheet.
-- **Captured trays and material score** — see what has been traded and who is ahead.
-- **Smooth movement** — pieces glide, lift and swap with castling animation; captured pieces fade under the mover.
-- **Procedural audio** — move and capture sounds are synthesized at runtime with `AudioTrack`. There are no WAV, MP3 or OGG files in the APK.
-
-### Made to feel native
-
-The board, buttons, coordinates, captured pieces and every chess piece are drawn on a single `Canvas`. The pieces are vector paths, not bitmaps, so the UI stays sharp at any density. The launcher icon is an adaptive vector too.
-
-### One small secret
-
-Tap the **TinyChess** title on the start screen ten times. That is all we will say.
-
-<br>
-
-## The tiny arcade is growing
-
-TinyChess is only the first cabinet. The same zero-bloat philosophy is expanding into a pocket arcade: **checkers**, **Power of 4**, and the one everybody keeps asking for — **chess against a human**.
-
-<table>
-<tr>
-<td width="33.33%" valign="top">
-  <img src="assets/roadmap-checkers.svg" width="100%" alt="Incoming: Checkers with local and online multiplayer">
-</td>
-<td width="33.33%" valign="top">
-  <img src="assets/roadmap-power4.svg" width="100%" alt="Incoming: Power of 4 with local and online multiplayer">
-</td>
-<td width="33.33%" valign="top">
-  <img src="assets/roadmap-multiplayer.svg" width="100%" alt="Incoming: TinyChess human versus human multiplayer">
-</td>
-</tr>
-</table>
-
-### Incoming in a future update
-
-- **Checkers** — the diagonal duel, rebuilt from scratch. Local and online multiplayer are planned, with the same instant-start, no-account experience as chess.
-- **Power of 4** — drop, connect, repeat. Seven columns, six rows, four in a row, and another excuse to challenge a friend.
-- **TinyChess Multiplayer** — human versus human, at last. The board, engine room and interface you already know, built for real opponents instead of bots.
-
-These games are **planned, not shipped**. The source tree only reserves empty `checkers/` and `powerof4/` packages so the games can sit side-by-side with chess when the bundle is ready. There is no placeholder gameplay, no fake launch button and no release date — just a direction: **more games, same tiny footprint.**
-
-Want to be there when it lands? Star the repo and watch Releases.
-
-<br>
+- **Solo** — play offline against the bot, with hints available in every game.
+- **Local co-op** — two players share one screen and pass the device.
+- **Online multiplayer** — share a six-character room code and play a friend.
+- **Same-room rematches** — start another online game without a new code.
+- Lossless undo and crash-safe auto-save in every mode.
+- Vertical or horizontal screen layout.
+- Procedural sound, vector pieces, and a hidden easter egg.
 
 ## Install
 
-1. Download the latest APK from **[Releases](https://github.com/R1y3n/tinychess/releases/latest)**.
-2. Open it on an Android 8.0+ device and allow installation from your browser or file manager.
+1. Download the latest APK from **[Releases](https://github.com/R1y3n/tinyarcade/releases/latest)**.
+2. Open it on Android 4.0 or newer and allow installation from your browser or file manager.
 3. Or install over USB:
 
 ```bash
-adb install -r TinyChess-v1.0.0.apk
+adb install -r TinyArcade-v1.0.1.apk
 ```
 
-The published APK is signed with a local debug key. It is intended for sideloading and personal use, not for Play Store distribution.
+The APK is signed with a local debug key for sideloading and personal use.
 
-<br>
+## Nightly build
 
-## Nightly build (size experiment)
+The nightly APK installs alongside stable as a separate app with a purple icon. It tests a much smaller **installed** footprint by disabling ahead-of-time compilation and running the DEX directly from the APK.
 
-<table>
-<tr>
-<td width="116" valign="top"><img src="assets/icon-nightly.svg" width="96" alt="TinyChess Nightly purple icon"></td>
-<td valign="top">
+- Installed size on the test device: about **149 KB**, versus **6.4 MB** for stable.
+- APK size: **229 KB**, because the DEX is stored uncompressed.
+- Trade-off: slower startup and engine search. This is an experiment, not a replacement for stable.
 
-The nightly APK installs **alongside** stable as `com.tiny.chess.nightly`, so it never replaces or updates the release build. It has its own purple icon.
-
-This variant tests a much smaller **installed** footprint by telling ART not to AOT-compile the app:
-
-- `android:vmSafeMode="true"` disables ART AOT compilation.
-- `android:useEmbeddedDex="true"` runs the DEX directly from the APK.
-- `classes.dex` is stored uncompressed and 4-byte aligned for direct loading.
-
-On the test device, Android Settings reports **6.4 MB** of storage for stable and **149 KB** for nightly — roughly **43x smaller**. The nightly code directory is 61 KB with no `oat/` artifacts. The APK itself is slightly larger (**53 KB**) because the DEX is not compressed.
-
-**Trade-off:** without AOT, startup and engine search are slower. This is a test build, not a replacement for stable.
-
-**[Download the nightly prerelease](https://github.com/R1y3n/tinychess/releases/tag/nightly)**
-
-</td>
-</tr>
-</table>
-
-<br>
+**[Download the nightly build](https://github.com/R1y3n/tinyarcade/releases/tag/nightly)**
 
 ## Build from source
 
-### Requirements
+Requirements:
 
 - JDK 8 or newer (`javac`, `keytool`)
 - Android SDK with `build-tools` and at least one `platforms/android-*`
-- `zip` available on your `PATH`
-
-### Build
+- `zip` on your `PATH`
 
 ```bash
-git clone https://github.com/R1y3n/tinychess.git
-cd tinychess
+git clone https://github.com/R1y3n/tinyarcade.git
+cd tinyarcade
 export ANDROID_HOME="$HOME/Android/Sdk"
 
-./build.sh stable    # -> tinychess.apk
-./build.sh nightly   # -> tinychess-nightly.apk
+./build.sh stable    # -> tinyarcade.apk
+./build.sh nightly   # -> tinyarcade-nightly.apk
 ```
 
-The script compiles the vector resources with `aapt2`, compiles Java directly against `android.jar`, converts the classes with `d8`, packs the DEX, aligns the archive with `zipalign` and signs it with `apksigner`. Running without an argument builds the stable variant.
-
-If `debug.keystore` is missing, `build.sh` generates one automatically. Never reuse a debug key for a production release.
-
-<br>
-
-## Project layout
-
-```text
-tinychess/
-├── AndroidManifest.xml          # one activity, portrait, no permissions
-├── build.sh                     # aapt2 + javac + d8 + zipalign + apksigner
-├── res/
-│   ├── drawable/                # adaptive icon vectors
-│   └── mipmap-anydpi-v26/
-├── nightly/
-│   ├── AndroidManifest.xml      # com.tiny.chess.nightly + no-AOT flags
-│   └── res/                     # purple adaptive icon
-├── src/com/tiny/
-│   ├── chess/
-│   │   └── MainActivity.java    # UI, engine, persistence, audio
-│   ├── checkers/                # empty stub for the incoming game
-│   └── powerof4/                # empty stub for the incoming game
-├── assets/
-│   ├── banner.svg               # README art
-│   ├── icon-nightly.svg         # nightly icon art
-│   ├── roadmap-checkers.svg     # incoming Checkers card
-│   ├── roadmap-power4.svg       # incoming Power of 4 card
-│   └── roadmap-multiplayer.svg  # incoming chess multiplayer card
-└── README.md
-```
-
-<br>
-
-## Under the hood
-
-TinyChess deliberately avoids every abstraction that would add bytes.
-
-| Layer | Implementation |
-|:--|:--|
-| **Board** | 128-square 0x88 array, compact integer pieces |
-| **Search** | Iterative-deepening alpha-beta with principal-variation search |
-| **Pruning** | Transposition table (65,536 entries), null-move pruning, late-move reductions, killer moves |
-| **Quiescence** | Capture and promotion search to avoid horizon effects |
-| **Evaluation** | Tapered midgame/endgame score with piece-square tables and bishop-pair bonus |
-| **Hashing** | Zobrist keys for position, side, castling and en passant |
-| **Threading** | UI board and search board are fully separated; the engine runs off the UI thread |
-| **Persistence** | Synchronous `SharedPreferences` with move history and SAN list |
-| **Rendering** | One `View`, one `Canvas`, vector paths for all six piece types |
-| **Audio** | Real-time PCM synthesis at 22,050 Hz |
-
-No engine library is linked, downloaded or bundled. The search, evaluation, move generation and rules are all part of the same 2,300-line source file.
-
-<br>
-
-## Privacy
-
-TinyChess requests **no permissions**. It cannot access the internet because it has no `INTERNET` permission. There are no accounts, analytics, ads, trackers or third-party SDKs. Everything stays on the device.
-
-<br>
+The script compiles resources with `aapt2`, compiles Java directly against `android.jar`, converts classes with `d8`, packs and aligns the archive, then signs it with `apksigner`. Running it without an argument builds stable.
 
 ## Controls
 
 | Action | How |
 |:--|:--|
-| Select a piece | Tap it — green dots show legal moves |
-| Capture | Tap a gold-framed destination |
-| Promote | Choose from the panel that appears |
+| Select a piece | Tap it — dots show legal moves |
+| Capture | Tap the highlighted destination |
 | Undo | Toolbar **Undo** |
 | Share game | Toolbar **Share PGN** |
 | New game | Toolbar **New / Menu** |
-| Continue | **Continue** on the start card |
+| Rematch | Toolbar **New / Menu** after an online game |
+| Hint | Toolbar **Hint** in solo games |
+| Settings | Gear on the home screen |
 
-<br>
+## Privacy
+
+Solo and local co-op work fully offline and save on the device. Online multiplayer only exchanges what is needed for the room you are playing in. There are no ads, analytics, trackers, or accounts.
+
+## Under the hood
+
+- 0x88 chess board with iterative-deepening alpha-beta search, transposition tables, quiescence search, and Zobrist hashing.
+- One `View` and one `Canvas`; all pieces are vector paths, not bitmaps.
+- Audio is synthesized at runtime — there are no sound files in the APK.
+- State is written synchronously after every move, so games survive force-stops.
+- Stable builds use maximum deflate compression; `resources.arsc` stays stored and 4-byte aligned for Android 11+.
 
 ---
 
@@ -282,7 +120,7 @@ TinyChess requests **no permissions**. It cannot access the internet because it 
 
 **R1y3n** · System automation
 
-[GitHub](https://github.com/R1y3n) &nbsp;·&nbsp; [Discord](https://discord.gg/gbVnRTn)
+[GitHub](https://github.com/R1y3n) · [Discord](https://discord.gg/gbVnRTn)
 
 <sub>Small by design. Fast by necessity. No frameworks were harmed in the making of this APK.</sub>
 

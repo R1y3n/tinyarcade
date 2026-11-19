@@ -1,7 +1,9 @@
 package com.tiny.chess;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
@@ -15,37 +17,226 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
+import com.tiny.arcade.ArcadeAudio;
+import com.tiny.arcade.ArcadeConfetti;
+import com.tiny.arcade.ArcadeGame;
+import com.tiny.arcade.ArcadePrefs;
+import com.tiny.arcade.ArcadeUi;
+import com.tiny.arcade.ChessTheme;
+import com.tiny.arcade.CoopLobbyView;
+import com.tiny.arcade.CoopSession;
+import com.tiny.arcade.GameModeView;
+import com.tiny.arcade.MainMenuView;
+import com.tiny.arcade.UpdateManager;
+import com.tiny.checkers.CheckersView;
+import com.tiny.powerof4.PowerOf4View;
 import java.util.Arrays;
 
-public class MainActivity extends Activity {
-    private ChessView chessView;
+public class MainActivity extends Activity implements MainMenuView.Listener {
+    private static final String LAST_PREFS = "tinyarcade_last";
+    private static final String LAST_COOP_GAME = "coop_game";
+
+    private ArcadeGame activeGame;
+    private boolean menuVisible = true;
+    private boolean themePickerVisible;
+    private UpdateManager updateManager;
+
+    private final Runnable openMenu = new Runnable() {
+        @Override
+        public void run() {
+            showMenu();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        chessView = new ChessView(this);
-        setContentView(chessView);
+        applyOrientation();
+        ArcadeAudio.setEnabled(ArcadePrefs.soundEnabled(this));
+        updateManager = new UpdateManager(this);
+        updateManager.check();
+        SharedPreferences prefs = getSharedPreferences(LAST_PREFS, MODE_PRIVATE);
+        int game = prefs.getInt(LAST_COOP_GAME, 0);
+        if (game != 0 && CoopSession.loadSaved(this, CoopLobbyView.gameKey(game)) != null) {
+            showCoopLobby(game, true);
+        } else {
+            showMenu();
+        }
+    }
+
+    private void applyOrientation() {
+        setRequestedOrientation(ArcadePrefs.horizontalMenu(this)
+            ? android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            : android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+    }
+
+    private void showMenu() {
+        if (activeGame != null) activeGame.onHide();
+        activeGame = null;
+        menuVisible = true;
+        themePickerVisible = false;
+        getSharedPreferences(LAST_PREFS, MODE_PRIVATE).edit()
+            .remove(LAST_COOP_GAME).commit();
+        setContentView(new MainMenuView(this, this));
+    }
+
+    @Override
+    public void onSettingsRequested() {
+        menuVisible = false;
+        themePickerVisible = false;
+        setContentView(new com.tiny.arcade.SettingsView(this,
+            new com.tiny.arcade.SettingsView.Listener() {
+                @Override
+                public void onSettingsBack() {
+                    showMenu();
+                }
+
+                @Override
+                public void onThemePickerRequested() {
+                    showThemePicker();
+                }
+            }));
+    }
+
+    private void showThemePicker() {
+        themePickerVisible = true;
+        setContentView(new com.tiny.arcade.ThemePickerView(this,
+            new com.tiny.arcade.ThemePickerView.Listener() {
+                @Override
+                public void onThemePickerDone() {
+                    onSettingsRequested();
+                }
+            }));
+    }
+
+    @Override
+    public void onGameSelected(final int game) {
+        if (activeGame != null) activeGame.onHide();
+        activeGame = null;
+        menuVisible = false;
+        setContentView(new GameModeView(this, game, new GameModeView.Listener() {
+            @Override
+            public void onSolo(int selectedGame) {
+                launchGame(selectedGame, null, false);
+            }
+
+            @Override
+            public void onLocalTwoPlayer(int selectedGame) {
+                launchGame(selectedGame, null, true);
+            }
+
+            @Override
+            public void onMultiplayer(int selectedGame) {
+                showCoopLobby(selectedGame);
+            }
+
+            @Override
+            public void onModeBack() {
+                showMenu();
+            }
+        }));
+    }
+
+    private void showCoopLobby(final int game) {
+        showCoopLobby(game, false);
+    }
+
+    private void showCoopLobby(final int game, boolean autoReconnect) {
+        if (activeGame != null) activeGame.onHide();
+        activeGame = null;
+        menuVisible = false;
+        getSharedPreferences(LAST_PREFS, MODE_PRIVATE).edit()
+            .putInt(LAST_COOP_GAME, game).commit();
+        CoopLobbyView lobby = new CoopLobbyView(this, game, new CoopLobbyView.Listener() {
+            @Override
+            public void onCoopReady(CoopSession session) {
+                launchGame(game, session, false);
+            }
+
+            @Override
+            public void onCoopBack() {
+                showMenu();
+            }
+        });
+        activeGame = lobby;
+        setContentView(lobby);
+        if (autoReconnect) lobby.reconnectSaved();
+    }
+
+    private void launchGame(int game, CoopSession coop) {
+        launchGame(game, coop, false);
+    }
+
+    private void launchGame(int game, CoopSession coop, boolean localTwoPlayer) {
+        if (activeGame != null) activeGame.onHide();
+        if (coop == null) {
+            getSharedPreferences(LAST_PREFS, MODE_PRIVATE).edit()
+                .remove(LAST_COOP_GAME).commit();
+        }
+        View view;
+        ArcadeGame gameScreen;
+        if (game == MainMenuView.GAME_CHESS) {
+            ChessView chess = new ChessView(this, coop, localTwoPlayer);
+            chess.setOnGamesRequested(openMenu);
+            view = chess;
+            gameScreen = chess;
+        } else if (game == MainMenuView.GAME_CHECKERS) {
+            CheckersView checkers = new CheckersView(this, openMenu, coop, localTwoPlayer);
+            view = checkers;
+            gameScreen = checkers;
+        } else {
+            PowerOf4View power4 = new PowerOf4View(this, openMenu, coop, localTwoPlayer);
+            view = power4;
+            gameScreen = power4;
+        }
+        activeGame = gameScreen;
+        menuVisible = false;
+        setContentView(view);
+        gameScreen.onShow();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (themePickerVisible) {
+            onSettingsRequested();
+            return;
+        }
+        if (!menuVisible || activeGame != null) {
+            showMenu();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (updateManager != null) updateManager.resumePendingInstall();
+        if (activeGame != null) activeGame.onShow();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (chessView != null) chessView.persistSessionNow();
+        if (activeGame != null) {
+            activeGame.persistSessionNow();
+            activeGame.onAppPause();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (chessView != null) chessView.persistSessionNow();
+        if (activeGame != null) activeGame.persistSessionNow();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (chessView != null) chessView.persistSessionNow();
+        if (activeGame != null) activeGame.persistSessionNow();
     }
 
-    static final class ChessView extends View implements Runnable {
+    static final class ChessView extends View implements Runnable, ArcadeGame, CoopSession.Listener {
         static final int MAX_PLY = 32;
         static final int MAX_GAME_PLIES = 600;
         static final int TT_SIZE = 1 << 16; // 65,536 entries in RAM
@@ -64,7 +255,7 @@ public class MainActivity extends Activity {
         static final String KEY_STATUS = "status_txt";
         static final String KEY_PGN_RES = "pgn_res";
 
-        static final String[] DIFF_NAMES = {"Easy", "Medium", "Hard", "Expert"};
+        static final String[] DIFF_NAMES = {"Easy", "Medium", "Hard", "Elite"};
 
         // Authoritative UI Board (STRICTLY mutated on UI thread only)
         final int[] b = new int[128];
@@ -81,6 +272,11 @@ public class MainActivity extends Activity {
         int humanSide = 1;       // 1 = White, -1 = Black
         int selectedSide = 1;    // Picker selection
         int difficulty = 0;      // 0=Easy (default), 1=Medium, 2=Hard, 3=Expert
+        int theme = 0;           // Chess board palette
+        int hintFrom = -1, hintTo = -1;
+        long hintUntil = 0L;
+        boolean hintThinking = false;
+        volatile int hintGen = 0;
         int sel = -1, lastFrom = -1, lastTo = -1;
         int pendingPromoFrom = -1, pendingPromoTo = -1, pendingPromoCap = 0;
 
@@ -91,7 +287,7 @@ public class MainActivity extends Activity {
         boolean animIsCapture = false, animSoundPlayed = false;
         long animStartMs = 0L;
 
-        // Easter Egg State (10 taps on "TinyChess" title)
+        // Easter Egg State (10 taps on "TinyArcade" title)
         int titleTapCount = 0;
         long lastTitleTapMs = 0L;
         boolean easterActive = false;
@@ -109,11 +305,15 @@ public class MainActivity extends Activity {
         // Procedural AudioTracks (zero external assets)
         AudioTrack sndMove;
         AudioTrack sndCapture;
+        final ArcadeConfetti confetti = new ArcadeConfetti();
+        final CoopSession coop;
+        boolean localTwoPlayer;
+        String coopWinner = "";
 
         boolean pickingSide = true;
         boolean hasSavedGame = false;
         boolean thinking = false, gameOver = false;
-        String status = "Choose color & difficulty";
+        String status = "Choose your side & bot strength";
         String pgnResult = "*";
 
         // Full snapshot history for 100% lossless Undo, Crash-Safe Save & PGN Share
@@ -254,9 +454,11 @@ public class MainActivity extends Activity {
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         final Path path = new Path();
         final RectF ovalTmp = new RectF();
+        final RectF btnGames = new RectF();
         final RectF btnNew = new RectF();
         final RectF btnUndo = new RectF();
         final RectF btnShare = new RectF();
+        final RectF btnHint = new RectF();
         final RectF titleHitRect = new RectF();
         final RectF btnContinue = new RectF();
         final RectF btnPickWhite = new RectF();
@@ -264,28 +466,80 @@ public class MainActivity extends Activity {
         final RectF[] btnDiff = new RectF[4];
         final RectF btnStart = new RectF();
         final RectF[] btnPromo = new RectF[4];
+        Runnable onGamesRequested;
 
         ChessView(Context ctx) {
+            this(ctx, null);
+        }
+
+        ChessView(Context ctx, CoopSession coop) {
+            this(ctx, coop, false);
+        }
+
+        ChessView(Context ctx, CoopSession coop, boolean localTwoPlayer) {
             super(ctx);
+            this.coop = coop;
+            this.localTwoPlayer = localTwoPlayer;
+            theme = ArcadePrefs.chessTheme(ctx);
             for (int i = 0; i < 4; i++) {
                 btnPromo[i] = new RectF();
                 btnDiff[i] = new RectF();
             }
             initSynthAudio();
-            setupInitialPosition();
-            loadSavedSession();
+            if (coop == null) {
+                setupInitialPosition();
+                loadSavedSession();
+            } else {
+                coop.setListener(this);
+                setupInitialPosition();
+                humanSide = coop.mySide();
+                selectedSide = humanSide;
+                difficulty = 0;
+                pickingSide = false;
+                hasSavedGame = true;
+                status = "Connecting to opponent...";
+                applyCoopState(coop.state());
+            }
+        }
+
+        void setOnGamesRequested(Runnable r) {
+            onGamesRequested = r;
+        }
+
+        @Override
+        public void onHide() {
+            if (coop != null) coop.pause();
+            else cancelBot();
+            persistSessionNow();
+        }
+
+        @Override
+        public void onShow() {
+            if (coop != null) {
+                coop.setListener(this);
+                coop.start();
+                applyCoopState(coop.state());
+            }
+        }
+
+        @Override
+        public void onAppPause() {
+            if (coop != null) coop.pause();
         }
 
         // --- Crash-Proof Session Persistence (commits synchronously on every move & lifecycle exit) ---
 
-        synchronized void persistSessionNow() {
+        public synchronized void persistSessionNow() {
+            if (coop != null) return;
             try {
-                SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                SharedPreferences prefs = getContext().getSharedPreferences(
+                    PREFS_NAME + (localTwoPlayer ? "_local" : ""), Context.MODE_PRIVATE);
                 SharedPreferences.Editor ed = prefs.edit();
                 ed.putInt(KEY_SIDE, selectedSide);
                 ed.putInt(KEY_DIFF, difficulty);
 
-                boolean activeSession = (plyCount > 1) || (!pickingSide && humanSide == -1);
+                boolean activeSession = (plyCount > 1)
+                    || (!pickingSide && (localTwoPlayer || humanSide == -1));
                 ed.putBoolean(KEY_HAS_SAVE, activeSession);
                 if (activeSession) {
                     StringBuilder mHex = new StringBuilder();
@@ -312,7 +566,8 @@ public class MainActivity extends Activity {
 
         synchronized void loadSavedSession() {
             try {
-                SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                SharedPreferences prefs = getContext().getSharedPreferences(
+                    PREFS_NAME + (localTwoPlayer ? "_local" : ""), Context.MODE_PRIVATE);
                 selectedSide = prefs.getInt(KEY_SIDE, 1);
                 difficulty = prefs.getInt(KEY_DIFF, 0); // Default Easy (0) on first launch
                 if (difficulty < 0 || difficulty > 3) difficulty = 0;
@@ -324,7 +579,7 @@ public class MainActivity extends Activity {
                     String sansRaw = prefs.getString(KEY_SANS, "");
 
                     setupInitialPosition();
-                    humanSide = savedHuman;
+                    humanSide = localTwoPlayer ? 1 : savedHuman;
 
                     if (movesRaw != null && movesRaw.length() > 0) {
                         String[] parts = movesRaw.split(",");
@@ -348,6 +603,8 @@ public class MainActivity extends Activity {
                     pgnResult = prefs.getString(KEY_PGN_RES, "*");
                     if (gameOver) {
                         status = prefs.getString(KEY_STATUS, "Game Over");
+                    } else if (localTwoPlayer) {
+                        status = localTurnText();
                     } else if (turn == humanSide) {
                         status = inCheckOn(b, humanSide)
                             ? "Check! Your turn"
@@ -357,6 +614,10 @@ public class MainActivity extends Activity {
                     }
                     // Open on menu with "Continue Game" ready anytime
                     pickingSide = true;
+                } else {
+                    status = localTwoPlayer
+                        ? "Pass the device after each turn"
+                        : "Choose your side & bot strength";
                 }
             } catch (Throwable ignored) {
                 hasSavedGame = false;
@@ -370,7 +631,7 @@ public class MainActivity extends Activity {
             sel = -1;
             legalTargetCount = 0;
             pendingPromoFrom = -1;
-            if (!gameOver && turn != humanSide) {
+            if (!gameOver && !localTwoPlayer && turn != humanSide) {
                 status = "Bot thinking...";
                 thinking = true;
                 invalidate();
@@ -378,9 +639,10 @@ public class MainActivity extends Activity {
             } else {
                 thinking = false;
                 if (!gameOver) {
-                    status = inCheckOn(b, humanSide)
-                        ? "Check! Your turn"
-                        : ("Your turn (" + (humanSide == 1 ? "White" : "Black") + ")");
+                    status = localTwoPlayer ? localTurnText()
+                        : (inCheckOn(b, humanSide)
+                            ? "Check! Your turn"
+                            : ("Your turn (" + (humanSide == 1 ? "White" : "Black") + ")"));
                 }
                 invalidate();
             }
@@ -502,6 +764,7 @@ public class MainActivity extends Activity {
         }
 
         void playMoveSound(boolean capture) {
+            if (!ArcadeAudio.enabled()) return;
             try {
                 AudioTrack tr = capture ? sndCapture : sndMove;
                 if (tr == null) return;
@@ -548,6 +811,8 @@ public class MainActivity extends Activity {
 
         synchronized void setupInitialPosition() {
             cancelBot();
+            clearHint();
+            confetti.stop();
             Arrays.fill(b, 0);
             int[] back = {4, 2, 3, 5, 6, 3, 2, 4};
             for (int f = 0; f < 8; f++) {
@@ -568,20 +833,31 @@ public class MainActivity extends Activity {
             lastTo = -1;
             gameOver = false;
             pgnResult = "*";
+            coopWinner = "";
             curHash = computeHash(b, castle, ep, turn);
             plyCount = 0;
             saveSnapshot(0, "");
         }
 
+        String localTurnText() {
+            String side = turn == 1 ? "White" : "Black";
+            return inCheckOn(b, turn) ? "Check! " + side + "'s turn" : side + "'s turn";
+        }
+
         synchronized void startNewGame(int chosenSide, int chosenDiff) {
             selectedSide = chosenSide;
-            humanSide = chosenSide;
+            humanSide = localTwoPlayer ? 1 : chosenSide;
             difficulty = chosenDiff;
             pickingSide = false;
+            clearHint();
             setupInitialPosition();
             hasSavedGame = true;
 
-            if (humanSide == 1) {
+            if (localTwoPlayer) {
+                status = localTurnText();
+                persistSessionNow();
+                invalidate();
+            } else if (humanSide == 1) {
                 status = "Your turn (White) · " + DIFF_NAMES[difficulty];
                 persistSessionNow();
                 invalidate();
@@ -592,6 +868,133 @@ public class MainActivity extends Activity {
                 invalidate();
                 startBotThread();
             }
+        }
+
+        boolean hintAvailable() {
+            return coop == null && !localTwoPlayer && !pickingSide && !gameOver
+                && !thinking && turn == humanSide
+                && ArcadePrefs.assistantEnabled(getContext());
+        }
+
+        void clearHint() {
+            hintGen++;
+            hintThinking = false;
+            hintFrom = -1;
+            hintTo = -1;
+            hintUntil = 0L;
+        }
+
+        void requestHint() {
+            if (!hintAvailable()) return;
+            final int gen = ++hintGen;
+            final int side = turn;
+            synchronized (this) {
+                System.arraycopy(b, 0, sb, 0, 128);
+                sCastle = castle;
+                sEp = ep;
+                sHalfClock = halfMoveClock;
+                sHash = curHash;
+                sHistLen = plyCount;
+                System.arraycopy(histHash, 0, sHistHash, 0, plyCount);
+            }
+            hintThinking = true;
+            hintFrom = -1;
+            hintTo = -1;
+            status = "Looking for a move...";
+            invalidate();
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    bestMoveRoot = 0;
+                    nodes = 0;
+                    abort = false;
+                    deadline = System.currentTimeMillis() + 420L;
+                    for (int i = 0; i < MAX_PLY; i++) killer1[i] = killer2[i] = 0;
+                    int hintBest = 0;
+                    for (int d = 1; d <= 5; d++) {
+                        int sc = search(d, -INF, INF, side, 0, true);
+                        if (bestMoveRoot != 0) hintBest = bestMoveRoot;
+                        if (abort && d > 1) break;
+                        if (Math.abs(sc) >= MATE - 64) break;
+                    }
+                    final int move = hintBest;
+                    post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (gen != hintGen || !hintAvailable()) {
+                                hintThinking = false;
+                                invalidate();
+                                return;
+                            }
+                            hintThinking = false;
+                            if (move != 0) {
+                                hintFrom = move & 0xFF;
+                                hintTo = (move >> 8) & 0xFF;
+                                hintUntil = SystemClock.uptimeMillis() + 6000L;
+                                status = "Hint: the glowing move is strong";
+                            } else {
+                                status = inCheckOn(b, humanSide) ? "Check! Your turn" : "Your turn";
+                            }
+                            invalidate();
+                        }
+                    });
+                }
+            }, "chess-hint");
+            t.setDaemon(true);
+            t.start();
+        }
+
+        void showRematchPrompt() {
+            new AlertDialog.Builder(getContext())
+                .setTitle("Rematch in this room?")
+                .setMessage("Both players will return to the starting position. The room code stays the same.")
+                .setPositiveButton("Rematch", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        coop.requestRematch();
+                    }
+                })
+                .setNegativeButton("Exit room", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        CoopSession.clearSaved(getContext(), "chess");
+                        if (onGamesRequested != null) onGamesRequested.run();
+                    }
+                })
+                .setNeutralButton("Cancel", null)
+                .show();
+        }
+
+        void confirmRestart() {
+            if (coop != null || pickingSide) return;
+            if (getWindowToken() == null) {
+                restartOfflineGame();
+                return;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle("Start a new game?");
+            builder.setMessage("Your current match will end. Saved progress is replaced.");
+            builder.setPositiveButton("New Game", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    restartOfflineGame();
+                }
+            });
+            builder.setNegativeButton("Cancel", null);
+            builder.show();
+        }
+
+        void restartOfflineGame() {
+            cancelBot();
+            confetti.stop();
+            clearHint();
+            if (localTwoPlayer) {
+                startNewGame(1, difficulty);
+                return;
+            }
+            pickingSide = true;
+            status = "Choose your side & bot strength";
+            invalidate();
         }
 
         void startBotThread() {
@@ -621,14 +1024,15 @@ public class MainActivity extends Activity {
 
             boolean wasThinking = thinking;
             cancelBot();
+            confetti.stop();
             pendingPromoFrom = -1;
             animPiece = 0;
             sel = -1;
             legalTargetCount = 0;
 
-            int stepsBack = wasThinking ? 1 : 2;
+            int stepsBack = localTwoPlayer ? 1 : (wasThinking ? 1 : 2);
             int targetIdx = plyCount - 1 - stepsBack;
-            int minIdx = (humanSide == 1) ? 0 : 1;
+            int minIdx = (localTwoPlayer || humanSide == 1) ? 0 : 1;
             if (targetIdx < minIdx) targetIdx = minIdx;
 
             System.arraycopy(histBoard[targetIdx], 0, b, 0, 128);
@@ -642,20 +1046,28 @@ public class MainActivity extends Activity {
             plyCount = targetIdx + 1;
             gameOver = false;
             pgnResult = "*";
-            hasSavedGame = (plyCount > 1) || (humanSide == -1);
-            status = inCheckOn(b, humanSide)
-                ? "Check! Your turn"
-                : ("Your turn (" + (humanSide == 1 ? "White" : "Black") + ") · " + DIFF_NAMES[difficulty]);
+            hasSavedGame = (plyCount > 1) || (localTwoPlayer && plyCount > 0) || (humanSide == -1);
+            status = localTwoPlayer ? localTurnText()
+                : (inCheckOn(b, humanSide)
+                    ? "Check! Your turn"
+                    : ("Your turn (" + (humanSide == 1 ? "White" : "Black") + ") · " + DIFF_NAMES[difficulty]));
             persistSessionNow();
             invalidate();
         }
 
         void sharePgn() {
             StringBuilder sbPgn = new StringBuilder();
-            sbPgn.append("[Event \"TinyChess Offline (").append(DIFF_NAMES[difficulty]).append(")\"]\n");
+            sbPgn.append("[Event \"TinyArcade ")
+                .append(localTwoPlayer ? "Local Co-op" : "Offline (" + DIFF_NAMES[difficulty] + ")")
+                .append("\"]\n");
             sbPgn.append("[Site \"Android\"]\n");
-            sbPgn.append("[White \"").append(humanSide == 1 ? "Human" : "TinyChess (" + DIFF_NAMES[difficulty] + ")").append("\"]\n");
-            sbPgn.append("[Black \"").append(humanSide == -1 ? "Human" : "TinyChess (" + DIFF_NAMES[difficulty] + ")").append("\"]\n");
+            if (localTwoPlayer) {
+                sbPgn.append("[White \"Player 1\"]\n");
+                sbPgn.append("[Black \"Player 2\"]\n");
+            } else {
+                sbPgn.append("[White \"").append(humanSide == 1 ? "Human" : "TinyArcade (" + DIFF_NAMES[difficulty] + ")").append("\"]\n");
+                sbPgn.append("[Black \"").append(humanSide == -1 ? "Human" : "TinyArcade (" + DIFF_NAMES[difficulty] + ")").append("\"]\n");
+            }
             sbPgn.append("[Result \"").append(pgnResult).append("\"]\n\n");
 
             for (int i = 1; i < plyCount; i++) {
@@ -668,7 +1080,7 @@ public class MainActivity extends Activity {
 
             Intent send = new Intent(Intent.ACTION_SEND);
             send.setType("text/plain");
-            send.putExtra(Intent.EXTRA_SUBJECT, "TinyChess Game (PGN)");
+            send.putExtra(Intent.EXTRA_SUBJECT, "TinyArcade Game (PGN)");
             send.putExtra(Intent.EXTRA_TEXT, sbPgn.toString().trim());
             Intent chooser = Intent.createChooser(send, "Share Chess History (PGN)");
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -691,15 +1103,15 @@ public class MainActivity extends Activity {
         void computeLegalTargetsForSelected() {
             legalTargetCount = 0;
             if (sel == -1) return;
-            int n = genMovesOn(b, castle, ep, humanSide, 0);
+            int n = genMovesOn(b, castle, ep, turn, 0);
             for (int i = 0; i < n; i++) {
                 int m = moveBuf[0][i];
                 if ((m & 0xFF) != sel) continue;
                 int oc = castle, oep = ep, ohc = halfMoveClock;
                 long oh = curHash;
-                makeMoveUi(m, humanSide);
-                boolean ok = !inCheckOn(b, humanSide);
-                unmakeMoveUi(m, humanSide, oc, oep, ohc, oh);
+                makeMoveUi(m, turn);
+                boolean ok = !inCheckOn(b, turn);
+                unmakeMoveUi(m, turn, oc, oep, ohc, oh);
                 if (!ok) continue;
 
                 int to = (m >> 8) & 0xFF;
@@ -720,29 +1132,54 @@ public class MainActivity extends Activity {
         @Override
         protected void onDraw(Canvas c) {
             int w = getWidth(), h = getHeight();
-            float frame = w * 0.032f;
-            float boardW = w - frame * 2f;
+            float margin = Math.min(w, h) * 0.032f;
+            float boardW = Math.min(w - margin * 2f, h * 0.70f);
+            float frame = Math.min(margin, boardW * 0.04f);
             float sq = boardW / 8f;
-            float outerTop = (h - w) / 2f;
-            float boardLeft = frame;
+            float boardLeft = (w - boardW) * 0.5f;
+            float outerTop = Math.max((h - (boardW + frame * 2f)) * 0.5f, sq * 2.45f);
             float boardTop = outerTop + frame;
             float trayH = sq * 0.72f;
             float btnH = sq * 0.78f;
             float btnY = Math.max(sq * 0.22f, outerTop - trayH - sq * 0.85f - btnH);
 
-            c.drawColor(0xFF1A1A1A);
+            c.drawColor(ArcadeUi.BG);
+            if (!pickingSide && !gameOver) {
+                ArcadeUi.drawTurnGlow(c, p, w, h,
+                    turn == 1 ? 0x30F0E1C2 : 0x303F6FA8, turn != humanSide);
+            }
 
-            // Top Toolbar: [New / Menu]  [Undo]  [Share PGN]
-            float pad = sq * 0.2f;
-            float btnW = (w - pad * 4f) / 3f;
-            btnNew.set(pad, btnY, pad + btnW, btnY + btnH);
-            btnUndo.set(pad * 2f + btnW, btnY, pad * 2f + btnW * 2f, btnY + btnH);
-            btnShare.set(pad * 3f + btnW * 2f, btnY, w - pad, btnY + btnH);
+            // Top Toolbar: [Games]  [New Game]  [Undo]  (Hint)  [Share]
+            float pad = sq * 0.14f;
+            float gap = sq * 0.12f;
+            boolean showHint = hintAvailable();
+            int buttonCount = showHint ? 5 : 4;
+            float btnW = (w - pad * 2f - gap * (buttonCount - 1)) / buttonCount;
+            btnGames.set(pad, btnY, pad + btnW, btnY + btnH);
+            btnNew.set(pad + btnW + gap, btnY, pad + btnW * 2f + gap, btnY + btnH);
+            btnUndo.set(pad + btnW * 2f + gap * 2f, btnY, pad + btnW * 3f + gap * 2f, btnY + btnH);
+            if (showHint) {
+                btnHint.set(pad + btnW * 3f + gap * 3f, btnY,
+                    pad + btnW * 4f + gap * 3f, btnY + btnH);
+                btnShare.set(pad + btnW * 4f + gap * 4f, btnY, w - pad, btnY + btnH);
+            } else {
+                btnHint.setEmpty();
+                btnShare.set(pad + btnW * 3f + gap * 3f, btnY, w - pad, btnY + btnH);
+            }
 
-            boolean canUndo = !pickingSide && (plyCount > (humanSide == 1 ? 1 : 2) || (thinking && plyCount > 1));
-            drawButton(c, btnNew, "New / Menu", true, 0xFF33373D);
-            drawButton(c, btnUndo, "Undo", canUndo, 0xFF33373D);
-            drawButton(c, btnShare, "Share PGN", plyCount > 1, 0xFF2E5B44);
+            boolean canUndo = coop == null && !pickingSide
+                && (localTwoPlayer
+                    ? plyCount > 1
+                    : (plyCount > (humanSide == 1 ? 1 : 2) || (thinking && plyCount > 1)));
+            ArcadeUi.drawIconButton(c, p, btnGames, ArcadeUi.ICON_HOME, true, ArcadeUi.SLATE);
+            ArcadeUi.drawIconButton(c, p, btnNew,
+                coop != null ? ArcadeUi.ICON_CLOSE : ArcadeUi.ICON_PLUS, true, ArcadeUi.BLUE);
+            ArcadeUi.drawIconButton(c, p, btnUndo, ArcadeUi.ICON_UNDO, canUndo, ArcadeUi.BLUE);
+            if (showHint) {
+                ArcadeUi.drawIconButton(c, p, btnHint, ArcadeUi.ICON_BULB,
+                    !hintThinking, ArcadeUi.GOLD);
+            }
+            ArcadeUi.drawIconButton(c, p, btnShare, ArcadeUi.ICON_SHARE, plyCount > 1, ArcadeUi.GREEN);
 
             // Status Banner
             p.setStyle(Paint.Style.FILL);
@@ -750,26 +1187,35 @@ public class MainActivity extends Activity {
             p.setColor(0xFFF0F0F0);
             p.setTextSize(sq * 0.35f);
             c.drawText(status, w / 2f, outerTop - trayH - sq * 0.22f, p);
+            p.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            p.setTextAlign(Paint.Align.RIGHT);
+            p.setTextSize(sq * 0.24f);
+            p.setColor(ArcadeUi.ORANGE_L);
+            c.drawText(ChessTheme.name(theme), w - pad, outerTop - trayH - sq * 0.22f - sq * 0.42f, p);
+            p.setTextAlign(Paint.Align.CENTER);
 
             // Eaten pieces aligned along top and bottom borders of the board
             int topSide = -humanSide;
             int botSide = humanSide;
             drawCapturedBorder(c, topSide, botSide, outerTop - trayH * 0.90f, sq);
-            drawCapturedBorder(c, botSide, topSide, outerTop + w + trayH * 0.08f, sq);
+            drawCapturedBorder(c, botSide, topSide, outerTop + boardW + frame * 2f + trayH * 0.08f, sq);
 
             // Oak Outer Frame with Coordinate Border (A-H, 1-8)
             p.setStyle(Paint.Style.FILL);
-            p.setColor(0xFFCBA678);
-            c.drawRect(0, outerTop, w, outerTop + w, p);
+            float frameLeft = boardLeft - frame;
+            float frameRight = boardLeft + boardW + frame;
+            float frameBottom = outerTop + boardW + frame * 2f;
+            p.setColor(ChessTheme.frame(theme));
+            c.drawRect(frameLeft, outerTop, frameRight, frameBottom, p);
 
             p.setStrokeWidth(Math.max(2f, w * 0.004f));
             p.setStyle(Paint.Style.STROKE);
-            p.setColor(0xFF3B2414);
-            c.drawRect(1f, outerTop + 1f, w - 1f, outerTop + w - 1f, p);
+            p.setColor(ChessTheme.frameLine(theme));
+            c.drawRect(frameLeft + 1f, outerTop + 1f, frameRight - 1f, frameBottom - 1f, p);
             c.drawRect(boardLeft - 1f, boardTop - 1f, boardLeft + boardW + 1f, boardTop + boardW + 1f, p);
 
             p.setStyle(Paint.Style.FILL);
-            p.setColor(0xFF2B180C);
+            p.setColor(ChessTheme.coord(theme));
             p.setTextSize(frame * 0.62f);
             p.setTextAlign(Paint.Align.CENTER);
             Paint.FontMetrics cfm = p.getFontMetrics();
@@ -783,11 +1229,11 @@ public class MainActivity extends Activity {
 
                 float cx = boardLeft + (i + 0.5f) * sq;
                 c.drawText(fLbl, cx, outerTop + frame * 0.5f + cyOff, p);
-                c.drawText(fLbl, cx, outerTop + w - frame * 0.5f + cyOff, p);
+                c.drawText(fLbl, cx, frameBottom - frame * 0.5f + cyOff, p);
 
                 float cy = boardTop + (i + 0.5f) * sq + cyOff;
-                c.drawText(rLbl, frame * 0.5f, cy, p);
-                c.drawText(rLbl, w - frame * 0.5f, cy, p);
+                c.drawText(rLbl, frameLeft + frame * 0.5f, cy, p);
+                c.drawText(rLbl, frameRight - frame * 0.5f, cy, p);
             }
 
             // Smooth piece animation timing
@@ -835,7 +1281,7 @@ public class MainActivity extends Activity {
                     float y = boardTop + dispR * sq;
 
                     p.setStyle(Paint.Style.FILL);
-                    p.setColor(isLight ? 0xFFE6CFAF : 0xFF7D5333);
+                    p.setColor(isLight ? ChessTheme.light(theme) : ChessTheme.dark(theme));
                     c.drawRect(x, y, x + sq, y + sq, p);
 
                     drawSquareWoodGrain(c, x, y, sq, idx, isLight);
@@ -886,6 +1332,8 @@ public class MainActivity extends Activity {
                 }
             }
 
+            drawMoveHint(c, boardLeft, boardTop, sq);
+
             if (animating) {
                 if (animRookPiece != 0) {
                     drawAnimatedPiece(c, animRookPiece, animRookFromSq, animRookToSq,
@@ -911,7 +1359,7 @@ public class MainActivity extends Activity {
                     p.setStyle(Paint.Style.FILL);
                     p.setColor(0xFF3A3F47);
                     c.drawRoundRect(btnPromo[i], 12f, 12f, p);
-                    int pc = promoTypes[i] * humanSide;
+                    int pc = promoTypes[i] * turn;
                     drawVectorPiece(c, pc, btnPromo[i].left, btnPromo[i].top, sq, false);
                 }
             }
@@ -920,26 +1368,57 @@ public class MainActivity extends Activity {
             if (pickingSide) {
                 p.setStyle(Paint.Style.FILL);
                 p.setColor(0xD6111111);
-                c.drawRect(0, outerTop, w, outerTop + w, p);
+                c.drawRect(frameLeft, outerTop, frameRight, frameBottom, p);
 
-                float cardW = w * 0.88f;
-                float cardH = hasSavedGame ? sq * 6.35f : sq * 5.25f;
+                float cardW = Math.min(w * 0.88f, boardW);
+                float cardH = localTwoPlayer
+                    ? (hasSavedGame ? sq * 4.00f : sq * 2.80f)
+                    : (hasSavedGame ? sq * 6.35f : sq * 5.25f);
                 float cx = (w - cardW) / 2f;
-                float cy = outerTop + (w - cardH) / 2f;
+                float cy = outerTop + (boardW + frame * 2f - cardH) / 2f;
 
                 p.setColor(0xFF23262C);
                 c.drawRoundRect(new RectF(cx, cy, cx + cardW, cy + cardH), 26f, 26f, p);
 
-                // Tappable "TinyChess" Header (10 taps triggers Easter Egg)
+                // Tappable "TinyArcade" Header (10 taps triggers Easter Egg)
                 float titleCenterY = cy + sq * 0.68f;
                 titleHitRect.set(cx + cardW * 0.15f, cy + sq * 0.12f, cx + cardW * 0.85f, cy + sq * 1.05f);
                 p.setTextAlign(Paint.Align.CENTER);
                 p.setColor(0xFFFFFFFF);
                 p.setTextSize(sq * 0.50f);
-                c.drawText("TinyChess", w / 2f, titleCenterY, p);
+                c.drawText("TinyArcade", w / 2f, titleCenterY, p);
 
                 float bPad = sq * 0.30f;
                 float curY = cy + sq * 1.05f;
+
+                if (localTwoPlayer) {
+                    btnPickWhite.setEmpty();
+                    btnPickBlack.setEmpty();
+                    for (int i = 0; i < 4; i++) btnDiff[i].setEmpty();
+
+                    if (hasSavedGame) {
+                        float contH = sq * 0.86f;
+                        btnContinue.set(cx + bPad, curY, cx + cardW - bPad, curY + contH);
+                        drawButton(c, btnContinue,
+                            gameOver ? "View Final Board" : "Continue game", true, ArcadeUi.GREEN);
+                        curY += contH + sq * 0.32f;
+                    } else {
+                        btnContinue.setEmpty();
+                    }
+
+                    p.setTypeface(android.graphics.Typeface.DEFAULT);
+                    p.setTextAlign(Paint.Align.CENTER);
+                    p.setColor(ArcadeUi.MUTED);
+                    p.setTextSize(sq * 0.30f);
+                    c.drawText("2 players · pass the device after each turn",
+                        w / 2f, curY + sq * 0.28f, p);
+                    curY += sq * 0.66f;
+
+                    float startH = sq * 0.94f;
+                    btnStart.set(cx + bPad, curY, cx + cardW - bPad, curY + startH);
+                    drawButton(c, btnStart, "Start Co-op Game", true, ArcadeUi.ORANGE);
+                    return;
+                }
 
                 // Optional Continue Button if a saved session exists
                 if (hasSavedGame) {
@@ -948,7 +1427,7 @@ public class MainActivity extends Activity {
                     int fullMoves = Math.max(1, plyCount / 2);
                     String contLabel = "Continue (" + (humanSide == 1 ? "White" : "Black")
                         + " · " + DIFF_NAMES[difficulty] + " · Move " + fullMoves + ")";
-                    drawButton(c, btnContinue, contLabel, true, 0xFF2E6B4E);
+                    drawButton(c, btnContinue, contLabel, true, ArcadeUi.GREEN);
                     curY += contH + sq * 0.28f;
                 } else {
                     btnContinue.setEmpty();
@@ -956,9 +1435,10 @@ public class MainActivity extends Activity {
 
                 // Section 1: Color Selector
                 p.setTextAlign(Paint.Align.LEFT);
-                p.setColor(0xFFB0B6C0);
+                p.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                p.setColor(ArcadeUi.MUTED);
                 p.setTextSize(sq * 0.26f);
-                c.drawText("PLAY AS", cx + bPad, curY + sq * 0.22f, p);
+                c.drawText("YOUR SIDE", cx + bPad, curY + sq * 0.22f, p);
                 curY += sq * 0.34f;
 
                 float sideBtnW = (cardW - bPad * 3f) / 2f;
@@ -966,37 +1446,48 @@ public class MainActivity extends Activity {
                 btnPickWhite.set(cx + bPad, curY, cx + bPad + sideBtnW, curY + sideBtnH);
                 btnPickBlack.set(cx + bPad * 2f + sideBtnW, curY, cx + cardW - bPad, curY + sideBtnH);
 
-                drawSelectableButton(c, btnPickWhite, "White", selectedSide == 1, 0xFF4A6B53);
-                drawSelectableButton(c, btnPickBlack, "Black", selectedSide == -1, 0xFF4A6B53);
+                drawSelectableButton(c, btnPickWhite, "White", selectedSide == 1, ArcadeUi.GREEN);
+                drawSelectableButton(c, btnPickBlack, "Black", selectedSide == -1, ArcadeUi.GREEN);
                 curY += sideBtnH + sq * 0.28f;
 
-                // Section 2: Difficulty Selector (Easy / Medium / Hard / Expert)
+                // Section 2: Difficulty Selector
                 p.setTextAlign(Paint.Align.LEFT);
-                p.setColor(0xFFB0B6C0);
+                p.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                p.setColor(ArcadeUi.MUTED);
                 p.setTextSize(sq * 0.26f);
-                c.drawText("DIFFICULTY", cx + bPad, curY + sq * 0.22f, p);
+                c.drawText("LEVEL", cx + bPad, curY + sq * 0.22f, p);
                 curY += sq * 0.34f;
 
-                float gap = sq * 0.14f;
-                float diffW = (cardW - bPad * 2f - gap * 3f) / 4f;
+                float diffGap = sq * 0.14f;
+                float diffW = (cardW - bPad * 2f - diffGap * 3f) / 4f;
                 float diffH = sq * 0.84f;
                 for (int i = 0; i < 4; i++) {
-                    float dx = cx + bPad + i * (diffW + gap);
+                    float dx = cx + bPad + i * (diffW + diffGap);
                     btnDiff[i].set(dx, curY, dx + diffW, curY + diffH);
-                    drawSelectableButton(c, btnDiff[i], DIFF_NAMES[i], difficulty == i, 0xFF3F628A);
+                    drawSelectableButton(c, btnDiff[i], DIFF_NAMES[i],
+                        difficulty == i, ArcadeUi.BLUE);
                 }
                 curY += diffH + sq * 0.34f;
 
                 // Start New Game Button
                 float startH = sq * 0.94f;
                 btnStart.set(cx + bPad, curY, cx + cardW - bPad, curY + startH);
-                drawButton(c, btnStart, "Start New Game", true, 0xFFD48837);
+                drawButton(c, btnStart, "Play New Session", true, ArcadeUi.ORANGE);
             }
 
             // Easter Egg Overlay: Balloons, Confetti & "Developed with ❤️" Fading Upward
             if (easterActive) {
                 drawEasterEggOverlay(c, w, h, sq);
             }
+
+            if (confetti.draw(c)) {
+                postInvalidateOnAnimation();
+            }
+
+            if (coop != null && !gameOver && !coop.opponentOnline()) {
+                ArcadeUi.drawCoopOffline(c, p, w, h);
+            }
+            if (coop != null && !gameOver) postInvalidateDelayed(1000L);
         }
 
         void drawEasterEggOverlay(Canvas c, int w, int h, float sq) {
@@ -1085,15 +1576,42 @@ public class MainActivity extends Activity {
             postInvalidateOnAnimation();
         }
 
-        void drawSelectableButton(Canvas c, RectF r, String label, boolean selected, int selectedColor) {
-            drawButton(c, r, label, true, selected ? selectedColor : 0xFF32363E);
-            if (selected) {
-                p.setStyle(Paint.Style.STROKE);
-                p.setStrokeWidth(3f);
-                p.setColor(0xFFFFFFFF);
-                c.drawRoundRect(r, 14f, 14f, p);
-                p.setStyle(Paint.Style.FILL);
+        void drawMoveHint(Canvas c, float left, float top, float sq) {
+            if (hintFrom < 0 || hintTo < 0) return;
+            long now = SystemClock.uptimeMillis();
+            if (now > hintUntil) {
+                hintFrom = -1;
+                hintTo = -1;
+                return;
             }
+            float pulse = 0.58f + 0.42f * (float) Math.sin(now / 140.0);
+            int[] squares = {hintFrom, hintTo};
+            for (int i = 0; i < squares.length; i++) {
+                int idx = squares[i];
+                int r = idx >> 4;
+                int f = idx & 7;
+                int dispR = humanSide == 1 ? r : 7 - r;
+                int dispF = humanSide == 1 ? f : 7 - f;
+                float x = left + dispF * sq;
+                float y = top + dispR * sq;
+                p.setStyle(Paint.Style.STROKE);
+                p.setStrokeWidth(Math.max(2.5f, sq * 0.07f));
+                p.setColor(i == 0 ? 0xFFF0D060 : 0xFF7CE08A);
+                p.setAlpha((int) (255 * pulse));
+                c.drawCircle(x + sq * 0.5f, y + sq * 0.5f,
+                    sq * (i == 0 ? 0.40f : 0.30f), p);
+                if (i == 1) {
+                    p.setStyle(Paint.Style.FILL);
+                    c.drawCircle(x + sq * 0.5f, y + sq * 0.5f, sq * 0.12f, p);
+                }
+            }
+            p.setStyle(Paint.Style.FILL);
+            p.setAlpha(255);
+            postInvalidateDelayed(70L);
+        }
+
+        void drawSelectableButton(Canvas c, RectF r, String label, boolean selected, int selectedColor) {
+            ArcadeUi.drawSelectableButton(c, p, r, label, selected, selectedColor);
         }
 
         void drawSquareWoodGrain(Canvas c, float x, float y, float sq, int seed, boolean isLight) {
@@ -1106,7 +1624,7 @@ public class MainActivity extends Activity {
                 h ^= h << 5;
                 float frac = ((h & 0xFF) / 255f);
                 float gy = y + sq * (0.12f + 0.76f * ((k + frac * 0.6f) / 5f));
-                p.setColor(isLight ? 0x149C7444 : 0x1C3B2210);
+                p.setColor(isLight ? ChessTheme.grainLight(theme) : ChessTheme.grainDark(theme));
                 c.drawLine(x + sq * 0.04f, gy, x + sq * 0.96f, gy, p);
             }
         }
@@ -1370,16 +1888,7 @@ public class MainActivity extends Activity {
         }
 
         void drawButton(Canvas c, RectF r, String label, boolean enabled, int activeColor) {
-            p.setStyle(Paint.Style.FILL);
-            p.setColor(enabled ? activeColor : 0xFF252525);
-            c.drawRoundRect(r, 14f, 14f, p);
-
-            p.setTextAlign(Paint.Align.CENTER);
-            p.setColor(enabled ? 0xFFFFFFFF : 0xFF666666);
-            p.setTextSize(r.height() * 0.40f);
-            Paint.FontMetrics fm = p.getFontMetrics();
-            float yOff = -(fm.ascent + fm.descent) / 2f;
-            c.drawText(label, r.centerX(), r.centerY() + yOff, p);
+            ArcadeUi.drawButton(c, p, r, label, enabled, activeColor);
         }
 
         void drawCapturedBorder(Canvas c, int capturerSide, int victimSide, float yTop, float sq) {
@@ -1435,6 +1944,11 @@ public class MainActivity extends Activity {
             if (e.getAction() != MotionEvent.ACTION_DOWN) return true;
             float tx = e.getX(), ty = e.getY();
 
+            if (btnGames.contains(tx, ty)) {
+                if (onGamesRequested != null) onGamesRequested.run();
+                return true;
+            }
+
             if (pickingSide) {
                 if (titleHitRect.contains(tx, ty)) {
                     onTitleTapped();
@@ -1444,24 +1958,26 @@ public class MainActivity extends Activity {
                     resumeSavedGame();
                     return true;
                 }
-                if (btnPickWhite.contains(tx, ty)) {
+                if (!localTwoPlayer && btnPickWhite.contains(tx, ty)) {
                     selectedSide = 1;
                     persistSessionNow();
                     invalidate();
                     return true;
                 }
-                if (btnPickBlack.contains(tx, ty)) {
+                if (!localTwoPlayer && btnPickBlack.contains(tx, ty)) {
                     selectedSide = -1;
                     persistSessionNow();
                     invalidate();
                     return true;
                 }
-                for (int i = 0; i < 4; i++) {
-                    if (btnDiff[i].contains(tx, ty)) {
-                        difficulty = i;
-                        persistSessionNow();
-                        invalidate();
-                        return true;
+                if (!localTwoPlayer) {
+                    for (int i = 0; i < 4; i++) {
+                        if (btnDiff[i].contains(tx, ty)) {
+                            difficulty = i;
+                            persistSessionNow();
+                            invalidate();
+                            return true;
+                        }
                     }
                 }
                 if (btnStart.contains(tx, ty)) {
@@ -1472,15 +1988,23 @@ public class MainActivity extends Activity {
             }
 
             if (btnNew.contains(tx, ty)) {
-                cancelBot();
-                persistSessionNow();
-                pickingSide = true;
-                status = "Choose color & difficulty";
-                invalidate();
+                if (coop != null) {
+                    if (gameOver && coop.state() != null && coop.state().isFinished()) {
+                        showRematchPrompt();
+                    } else if (onGamesRequested != null) {
+                        onGamesRequested.run();
+                    }
+                    return true;
+                }
+                confirmRestart();
                 return true;
             }
             if (btnUndo.contains(tx, ty)) {
-                undoMove();
+                if (coop == null) undoMove();
+                return true;
+            }
+            if (btnHint.contains(tx, ty)) {
+                requestHint();
                 return true;
             }
             if (btnShare.contains(tx, ty) && plyCount > 1) {
@@ -1504,15 +2028,19 @@ public class MainActivity extends Activity {
                 return true;
             }
 
-            if (thinking || gameOver || turn != humanSide) return true;
+            if (thinking || gameOver || (!localTwoPlayer && turn != humanSide)
+                || (coop != null && !coop.opponentOnline())) return true;
 
             int w = getWidth(), h = getHeight();
-            float frame = w * 0.032f;
-            float boardW = w - frame * 2f;
+            float margin = Math.min(w, h) * 0.032f;
+            float boardW = Math.min(w - margin * 2f, h * 0.70f);
+            float frame = Math.min(margin, boardW * 0.04f);
             float sq = boardW / 8f;
-            float boardTop = (h - w) / 2f + frame;
+            float boardLeft = (w - boardW) * 0.5f;
+            float outerTop = Math.max((h - (boardW + frame * 2f)) * 0.5f, sq * 2.45f);
+            float boardTop = outerTop + frame;
 
-            int dispF = (int) Math.floor((tx - frame) / sq);
+            int dispF = (int) Math.floor((tx - boardLeft) / sq);
             int dispR = (int) Math.floor((ty - boardTop) / sq);
             if (dispF < 0 || dispF > 7 || dispR < 0 || dispR > 7) return true;
 
@@ -1520,7 +2048,7 @@ public class MainActivity extends Activity {
             int f = (humanSide == 1) ? dispF : (7 - dispF);
             int clicked = (r << 4) | f;
 
-            if (b[clicked] * humanSide > 0) {
+            if (b[clicked] * turn > 0) {
                 sel = (sel == clicked) ? -1 : clicked;
                 computeLegalTargetsForSelected();
                 invalidate();
@@ -1528,15 +2056,15 @@ public class MainActivity extends Activity {
             }
 
             if (sel != -1) {
-                int count = genMovesOn(b, castle, ep, humanSide, 0);
+                int count = genMovesOn(b, castle, ep, turn, 0);
                 for (int i = 0; i < count; i++) {
                     int m = moveBuf[0][i];
                     if ((m & 0xFF) == sel && ((m >> 8) & 0xFF) == clicked) {
                         int oc = castle, oep = ep, ohc = halfMoveClock;
                         long oh = curHash;
-                        makeMoveUi(m, humanSide);
-                        boolean legal = !inCheckOn(b, humanSide);
-                        unmakeMoveUi(m, humanSide, oc, oep, ohc, oh);
+                        makeMoveUi(m, turn);
+                        boolean legal = !inCheckOn(b, turn);
+                        unmakeMoveUi(m, turn, oc, oep, ohc, oh);
                         if (!legal) continue;
 
                         int fl = (m >> 24) & 0xFF;
@@ -1556,30 +2084,207 @@ public class MainActivity extends Activity {
         }
 
         synchronized void commitHumanMove(int m) {
+            clearHint();
             int movingPc = b[m & 0xFF];
             int capPc = (byte) ((m >> 16) & 0xFF);
-            String san = buildSan(m, humanSide);
-            makeMoveUi(m, humanSide);
-            triggerMoveAnimation(m, humanSide, movingPc, capPc);
+            int side = turn;
+            String san = buildSan(m, side);
+            makeMoveUi(m, side);
+            triggerMoveAnimation(m, side, movingPc, capPc);
 
             lastFrom = m & 0xFF;
             lastTo = (m >> 8) & 0xFF;
             sel = -1;
             legalTargetCount = 0;
-            turn = -humanSide;
+            turn = -side;
             san += checkSuffix(turn);
             saveSnapshot(m, san);
             hasSavedGame = true;
+            coopWinner = "";
+
+            if (coop != null) {
+                boolean over = checkEnd(turn);
+                if (!over) status = "Opponent's turn";
+                sendCoopMoves(over ? coopWinner : "");
+                invalidate();
+                return;
+            }
 
             if (checkEnd(turn)) {
                 persistSessionNow();
                 invalidate();
                 return;
             }
-            status = "Bot thinking...";
+            status = localTwoPlayer ? localTurnText() : "Bot thinking...";
             persistSessionNow();
             invalidate();
-            startBotThread();
+            if (!localTwoPlayer) startBotThread();
+        }
+
+        boolean validCoopChess(String[] parts) {
+            int[] test = histBoard[0].clone();
+            int tc = histCastle[0];
+            int te = histEp[0];
+            long h = histHash[0];
+            int side = 1;
+            int[] st = new int[3];
+            for (String part : parts) {
+                if (part.length() == 0) return false;
+                int m;
+                try {
+                    m = (int) Long.parseLong(part, 16);
+                } catch (Throwable bad) {
+                    return false;
+                }
+                int n = genMovesOn(test, tc, te, side, 0);
+                boolean legal = false;
+                for (int i = 0; i < n; i++) {
+                    if (moveBuf[0][i] == m) {
+                        legal = true;
+                        break;
+                    }
+                }
+                if (!legal) return false;
+                h = applyMove(test, m, side, h, st);
+                if (inCheckOn(test, side)) return false;
+                tc = st[0];
+                te = st[1];
+                side = -side;
+            }
+            return true;
+        }
+
+        void sendCoopMoves(String winner) {
+            if (coop == null) return;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i < plyCount; i++) {
+                if (i > 1) sb.append(',');
+                sb.append(Integer.toHexString(histMove[i]));
+            }
+            coop.sendMoves(sb.toString(), plyCount - 1, turn, winner);
+        }
+
+        @Override
+        public void onCoopState(CoopSession session, CoopSession.State s) {
+            if (session != coop || s == null) return;
+            applyCoopState(s);
+        }
+
+        @Override
+        public void onCoopError(CoopSession session, String message) {
+            if (session != coop || gameOver) return;
+            status = message;
+            invalidate();
+        }
+
+        synchronized void applyCoopState(CoopSession.State s) {
+            if (s == null || !s.isActive()) return;
+
+            int localMoves = Math.max(0, plyCount - 1);
+            if (!s.isFinished() && s.ply == 0 && (s.moves == null || s.moves.length() == 0)
+                && (gameOver || localMoves > 0)) {
+                cancelBot();
+                confetti.stop();
+                clearHint();
+                setupInitialPosition();
+                coopWinner = "";
+                gameOver = false;
+                pickingSide = false;
+                status = localTurnText();
+                invalidate();
+                localMoves = 0;
+            }
+            String raw = s.moves == null ? "" : s.moves;
+            String[] parts = raw.length() == 0 ? new String[0] : raw.split(",");
+            if (parts.length < localMoves && !s.isFinished()) {
+                if (parts.length == localMoves - 1 && s.turn == coop.mySide()) {
+                    sendCoopMoves(gameOver ? coopWinner : "");
+                }
+                return;
+            }
+            if (parts.length > localMoves) {
+                if (!validCoopChess(parts)) {
+                    gameOver = true;
+                    status = "Invalid move from opponent";
+                    invalidate();
+                    return;
+                }
+                cancelBot();
+                confetti.stop();
+                setupInitialPosition();
+                boolean animateLast = parts.length == localMoves + 1;
+                int animMove = 0;
+                int animMovingPiece = 0;
+                int animCapturedPiece = 0;
+                int animSide = 1;
+                int side = 1;
+                for (int i = 0; i < parts.length; i++) {
+                    String part = parts[i];
+                    if (part.length() == 0) continue;
+                    int m;
+                    try {
+                        m = (int) Long.parseLong(part, 16);
+                    } catch (Throwable bad) {
+                        break;
+                    }
+                    if (animateLast && i == parts.length - 1) {
+                        animMove = m;
+                        animMovingPiece = b[m & 0xFF];
+                        animCapturedPiece = (byte) ((m >> 16) & 0xFF);
+                        animSide = side;
+                    }
+                    String san = buildSan(m, side);
+                    makeMoveUi(m, side);
+                    lastFrom = m & 0xFF;
+                    lastTo = (m >> 8) & 0xFF;
+                    turn = -side;
+                    saveSnapshot(m, san);
+                    side = -side;
+                }
+                if (animateLast && animMove != 0) {
+                    triggerMoveAnimation(animMove, animSide, animMovingPiece, animCapturedPiece);
+                }
+            }
+
+            humanSide = coop.mySide();
+            selectedSide = humanSide;
+            pickingSide = false;
+            sel = -1;
+            legalTargetCount = 0;
+            pendingPromoFrom = -1;
+            boolean wasOver = gameOver;
+            gameOver = s.isFinished();
+            if (gameOver) {
+                thinking = false;
+                if ("0".equals(s.winner)) {
+                    pgnResult = "1/2-1/2";
+                    status = "Draw";
+                } else if ("1".equals(s.winner)) {
+                    pgnResult = "1-0";
+                } else if ("-1".equals(s.winner)) {
+                    pgnResult = "0-1";
+                }
+                if (!"0".equals(s.winner) && s.winner.length() > 0) {
+                    boolean youWon = (s.winner.startsWith("-") ? -1 : 1) == humanSide;
+                    status = youWon ? "You win! · Tap Exit" : "Opponent wins · Tap Exit";
+                    if (!wasOver) {
+                        confetti.stop();
+                        if (youWon) confetti.start(getWidth(), getHeight());
+                    }
+                }
+            } else {
+                turn = s.turn;
+                if (!coop.opponentOnline()) {
+                    status = "Opponent offline — waiting to reconnect...";
+                } else if (turn == humanSide) {
+                    status = inCheckOn(b, humanSide)
+                        ? "Check! Your turn"
+                        : ("Your turn (" + (humanSide == 1 ? "White" : "Black") + ")");
+                } else {
+                    status = "Opponent's turn...";
+                }
+            }
+            invalidate();
         }
 
         @Override
@@ -1805,11 +2510,25 @@ public class MainActivity extends Activity {
             if (!hasLegal) {
                 gameOver = true;
                 if (inCheckOn(b, side)) {
-                    pgnResult = (side == 1) ? "0-1" : "1-0";
-                    status = (side == humanSide) ? "Checkmate - Bot wins!" : "Checkmate - You win!";
+                    int winnerSide = -side;
+                    pgnResult = (winnerSide == 1) ? "1-0" : "0-1";
+                    if (coop != null) {
+                        coopWinner = winnerSide == 1 ? "1" : "-1";
+                        boolean youWon = winnerSide == humanSide;
+                        status = youWon ? "Checkmate - You win!" : "Checkmate - Opponent wins!";
+                        if (youWon) confetti.start(getWidth(), getHeight());
+                    } else if (localTwoPlayer) {
+                        status = "Checkmate - "
+                            + (winnerSide == 1 ? "White" : "Black") + " wins!";
+                        confetti.start(getWidth(), getHeight());
+                    } else {
+                        status = (side == humanSide) ? "Checkmate - Bot wins!" : "Checkmate - You win!";
+                        if (side != humanSide) confetti.start(getWidth(), getHeight());
+                    }
                 } else {
                     pgnResult = "1/2-1/2";
                     status = "Draw (Stalemate)";
+                    if (coop != null) coopWinner = "0";
                 }
                 return true;
             }
@@ -1817,6 +2536,7 @@ public class MainActivity extends Activity {
                 gameOver = true;
                 pgnResult = "1/2-1/2";
                 status = "Draw (50-move rule)";
+                if (coop != null) coopWinner = "0";
                 return true;
             }
             int reps = 0;
@@ -1825,6 +2545,7 @@ public class MainActivity extends Activity {
                     gameOver = true;
                     pgnResult = "1/2-1/2";
                     status = "Draw (Threefold repetition)";
+                    if (coop != null) coopWinner = "0";
                     return true;
                 }
             }
@@ -1832,6 +2553,7 @@ public class MainActivity extends Activity {
                 gameOver = true;
                 pgnResult = "1/2-1/2";
                 status = "Draw (Insufficient material)";
+                if (coop != null) coopWinner = "0";
                 return true;
             }
             return false;

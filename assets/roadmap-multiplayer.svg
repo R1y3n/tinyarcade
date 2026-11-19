@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" aria-label="TinyChess Multiplayer: incoming human versus human chess">
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" aria-label="TinyArcade Multiplayer: online human versus human chess">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#101216"/>
@@ -28,8 +28,8 @@
     <path d="M80 0v420M160 0v420M240 0v420M320 0v420M400 0v420M480 0v420M560 0v420"/>
   </g>
 
-  <text x="44" y="50" fill="#A78BFA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3.2">INCOMING · CHESS UPDATE</text>
-  <text x="44" y="100" fill="#F7F8FA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="-1.1">TinyChess</text>
+  <text x="44" y="50" fill="#A78BFA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3.2">MULTIPLAYER · NOW AVAILABLE</text>
+  <text x="44" y="100" fill="#F7F8FA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="-1.1">TinyArcade</text>
   <text x="44" y="140" fill="#F7F8FA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="-1.1">Multiplayer</text>
   <text x="44" y="171" fill="#C3CBD7" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="400">The board you know. A rival who isn't a bot.</text>
 
@@ -37,7 +37,7 @@
     <circle cx="48" cy="212" r="4" fill="url(#accent)"/>
     <text x="62" y="217" fill="#D8DEE8">Human vs human, at last</text>
     <circle cx="48" cy="246" r="4" fill="url(#accent)"/>
-    <text x="62" y="251" fill="#D8DEE8">Local &amp; online play planned</text>
+    <text x="62" y="251" fill="#D8DEE8">Share a code, play online</text>
     <circle cx="48" cy="280" r="4" fill="url(#accent)"/>
     <text x="62" y="285" fill="#D8DEE8">Same tiny footprint</text>
   </g>
@@ -78,6 +78,6 @@
   </g>
 
   <line x1="44" y1="354" x2="596" y2="354" stroke="#2A2F38" stroke-width="1"/>
-  <text x="44" y="384" fill="#8D97A8" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8">INCOMING FEATURE · NOT IN THE CURRENT APK</text>
-  <text x="596" y="384" fill="#A78BFA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8" text-anchor="end">TINYCHESS ROADMAP</text>
+  <text x="44" y="384" fill="#8D97A8" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8">REST + SSE · NO FIREBASE SDK</text>
+  <text x="596" y="384" fill="#A78BFA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8" text-anchor="end">TINYARCADE MULTIPLAYER</text>
 </svg>

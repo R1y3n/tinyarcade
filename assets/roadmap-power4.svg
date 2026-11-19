@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" aria-label="Power of 4: an incoming TinyChess game with local and online multiplayer">
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" aria-label="Power of 4: a playable TinyArcade game with four bot levels">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#101216"/>
@@ -34,7 +34,7 @@
     <path d="M80 0v420M160 0v420M240 0v420M320 0v420M400 0v420M480 0v420M560 0v420"/>
   </g>
 
-  <text x="44" y="50" fill="#E2B33C" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3.2">INCOMING · GAME 03</text>
+  <text x="44" y="50" fill="#E2B33C" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3.2">GAME 03 · NOW PLAYABLE</text>
   <text x="44" y="112" fill="#F7F8FA" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.2">Power of 4</text>
   <text x="44" y="143" fill="#C3CBD7" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="400">Drop. Connect. Own the grid.</text>
 
@@ -79,6 +79,6 @@
   </g>
 
   <line x1="44" y1="346" x2="596" y2="346" stroke="#2A2F38" stroke-width="1"/>
-  <text x="44" y="378" fill="#8D97A8" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8">INCOMING FEATURE · NOT IN THE CURRENT APK</text>
+  <text x="44" y="378" fill="#8D97A8" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8">INCLUDED IN THE CURRENT BUILD</text>
   <text x="596" y="378" fill="#E2B33C" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.8" text-anchor="end">TINYCHESS ROADMAP</text>
 </svg>
