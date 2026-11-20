@@ -39,6 +39,7 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
     private ArcadeGame activeGame;
     private boolean menuVisible = true;
     private boolean themePickerVisible;
+    private com.tiny.arcade.ThemePickerView themePickerView;
     private UpdateManager updateManager;
 
     private final Runnable openMenu = new Runnable() {
@@ -100,13 +101,23 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
 
     private void showThemePicker() {
         themePickerVisible = true;
-        setContentView(new com.tiny.arcade.ThemePickerView(this,
+        themePickerView = new com.tiny.arcade.ThemePickerView(this,
             new com.tiny.arcade.ThemePickerView.Listener() {
                 @Override
                 public void onThemePickerDone() {
+                    if (themePickerView != null) themePickerView.saveSelection();
+                    themePickerView = null;
                     onSettingsRequested();
                 }
-            }));
+
+                @Override
+                public void onThemePickerCancel() {
+                    if (themePickerView != null) themePickerView.cancelSelection();
+                    themePickerView = null;
+                    onSettingsRequested();
+                }
+            });
+        setContentView(themePickerView);
     }
 
     @Override
@@ -198,6 +209,8 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
     @Override
     public void onBackPressed() {
         if (themePickerVisible) {
+            if (themePickerView != null) themePickerView.cancelSelection();
+            themePickerView = null; // Back cancels the preview without saving.
             onSettingsRequested();
             return;
         }
@@ -460,7 +473,6 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
         final RectF btnShare = new RectF();
         final RectF btnHint = new RectF();
         final RectF titleHitRect = new RectF();
-        final RectF btnContinue = new RectF();
         final RectF btnPickWhite = new RectF();
         final RectF btnPickBlack = new RectF();
         final RectF[] btnDiff = new RectF[4];
@@ -564,6 +576,12 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
             }
         }
 
+        private void clearSavedSession() {
+            getContext().getSharedPreferences(
+                PREFS_NAME + (localTwoPlayer ? "_local" : ""), Context.MODE_PRIVATE)
+                .edit().clear().commit();
+        }
+
         synchronized void loadSavedSession() {
             try {
                 SharedPreferences prefs = getContext().getSharedPreferences(
@@ -612,7 +630,9 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
                     } else {
                         status = "Bot thinking...";
                     }
-                    // Open on menu with "Continue Game" ready anytime
+                    // Saved moves remain crash-safe; setup starts a fresh game rather than offering Continue.
+                    hasSavedGame = false;
+                    clearSavedSession();
                     pickingSide = true;
                 } else {
                     status = localTwoPlayer
@@ -625,28 +645,6 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
             }
         }
 
-        synchronized void resumeSavedGame() {
-            if (!hasSavedGame) return;
-            pickingSide = false;
-            sel = -1;
-            legalTargetCount = 0;
-            pendingPromoFrom = -1;
-            if (!gameOver && !localTwoPlayer && turn != humanSide) {
-                status = "Bot thinking...";
-                thinking = true;
-                invalidate();
-                startBotThread();
-            } else {
-                thinking = false;
-                if (!gameOver) {
-                    status = localTwoPlayer ? localTurnText()
-                        : (inCheckOn(b, humanSide)
-                            ? "Check! Your turn"
-                            : ("Your turn (" + (humanSide == 1 ? "White" : "Black") + ")"));
-                }
-                invalidate();
-            }
-        }
 
         // --- Easter Egg Trigger & Particle Physics ---
 
@@ -1188,10 +1186,6 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
             p.setTextSize(sq * 0.35f);
             c.drawText(status, w / 2f, outerTop - trayH - sq * 0.22f, p);
             p.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-            p.setTextAlign(Paint.Align.RIGHT);
-            p.setTextSize(sq * 0.24f);
-            p.setColor(ArcadeUi.ORANGE_L);
-            c.drawText(ChessTheme.name(theme), w - pad, outerTop - trayH - sq * 0.22f - sq * 0.42f, p);
             p.setTextAlign(Paint.Align.CENTER);
 
             // Eaten pieces aligned along top and bottom borders of the board
@@ -1372,8 +1366,8 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
 
                 float cardW = Math.min(w * 0.88f, boardW);
                 float cardH = localTwoPlayer
-                    ? (hasSavedGame ? sq * 4.00f : sq * 2.80f)
-                    : (hasSavedGame ? sq * 6.35f : sq * 5.25f);
+                    ? sq * 2.80f
+                    : sq * 5.25f;
                 float cx = (w - cardW) / 2f;
                 float cy = outerTop + (boardW + frame * 2f - cardH) / 2f;
 
@@ -1396,16 +1390,6 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
                     btnPickBlack.setEmpty();
                     for (int i = 0; i < 4; i++) btnDiff[i].setEmpty();
 
-                    if (hasSavedGame) {
-                        float contH = sq * 0.86f;
-                        btnContinue.set(cx + bPad, curY, cx + cardW - bPad, curY + contH);
-                        drawButton(c, btnContinue,
-                            gameOver ? "View Final Board" : "Continue game", true, ArcadeUi.GREEN);
-                        curY += contH + sq * 0.32f;
-                    } else {
-                        btnContinue.setEmpty();
-                    }
-
                     p.setTypeface(android.graphics.Typeface.DEFAULT);
                     p.setTextAlign(Paint.Align.CENTER);
                     p.setColor(ArcadeUi.MUTED);
@@ -1418,19 +1402,6 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
                     btnStart.set(cx + bPad, curY, cx + cardW - bPad, curY + startH);
                     drawButton(c, btnStart, "Start Co-op Game", true, ArcadeUi.ORANGE);
                     return;
-                }
-
-                // Optional Continue Button if a saved session exists
-                if (hasSavedGame) {
-                    float contH = sq * 0.86f;
-                    btnContinue.set(cx + bPad, curY, cx + cardW - bPad, curY + contH);
-                    int fullMoves = Math.max(1, plyCount / 2);
-                    String contLabel = "Continue (" + (humanSide == 1 ? "White" : "Black")
-                        + " · " + DIFF_NAMES[difficulty] + " · Move " + fullMoves + ")";
-                    drawButton(c, btnContinue, contLabel, true, ArcadeUi.GREEN);
-                    curY += contH + sq * 0.28f;
-                } else {
-                    btnContinue.setEmpty();
                 }
 
                 // Section 1: Color Selector
@@ -1952,10 +1923,6 @@ public class MainActivity extends Activity implements MainMenuView.Listener {
             if (pickingSide) {
                 if (titleHitRect.contains(tx, ty)) {
                     onTitleTapped();
-                    return true;
-                }
-                if (hasSavedGame && btnContinue.contains(tx, ty)) {
-                    resumeSavedGame();
                     return true;
                 }
                 if (!localTwoPlayer && btnPickWhite.contains(tx, ty)) {

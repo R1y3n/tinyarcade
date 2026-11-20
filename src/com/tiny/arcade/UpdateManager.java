@@ -43,6 +43,11 @@ public final class UpdateManager {
 
     public void check() {
         if (!supported()) return;
+        String savedVersion = ArcadePrefs.updateVersion(activity);
+        if (savedVersion.length() > 0 && !newer(savedVersion, currentVersion())) {
+            ArcadePrefs.clearUpdate(activity);
+            ArcadePrefs.setSkippedVersion(activity, "");
+        }
         long checkedAt = ArcadePrefs.updateLastCheck(activity);
         if (checkedAt > 0L && System.currentTimeMillis() - checkedAt < CHECK_INTERVAL) {
             showSavedUpdate();

@@ -18,6 +18,7 @@ import android.view.ViewConfiguration;
 public final class ThemePickerView extends View {
     public interface Listener {
         void onThemePickerDone();
+        void onThemePickerCancel();
     }
 
     private static final String[] FILES = {"A", "B", "C", "D", "E", "F", "G", "H"};
@@ -360,7 +361,7 @@ public final class ThemePickerView extends View {
             stripDown = false;
             if (old == PRESS_BACK && back.contains(x, y)) {
                 invalidate();
-                listener.onThemePickerDone();
+                listener.onThemePickerCancel();
                 return true;
             }
             if (old == PRESS_DONE && done.contains(x, y)) {
@@ -372,13 +373,13 @@ public final class ThemePickerView extends View {
                 if (dragging) {
                     selected = nearestIndex();
                     centerOn(selected);
-                    commit();
+                    invalidate();
                 } else {
                     int hit = cellAt(x, y);
                     if (hit >= 0) {
                         selected = hit;
                         centerOn(hit);
-                        commit();
+                        invalidate();
                     }
                 }
             }
@@ -388,10 +389,8 @@ public final class ThemePickerView extends View {
         }
 
         if (action == MotionEvent.ACTION_CANCEL) {
-            if (dragging) {
-                selected = committed;
-                centerOn(selected);
-            }
+            selected = committed;
+            centerOn(selected);
             pressed = PRESS_NONE;
             dragging = false;
             stripDown = false;
@@ -429,10 +428,16 @@ public final class ThemePickerView extends View {
         scroll = clamp(target, 0f, maxScroll);
     }
 
-    private void commit() {
+    public void saveSelection() {
         if (selected == committed) return;
         ArcadePrefs.setChessTheme(getContext(), selected);
         committed = selected;
+    }
+
+    public void cancelSelection() {
+        selected = committed;
+        centerOn(selected);
+        invalidate();
     }
 
     private static float clamp(float value, float min, float max) {

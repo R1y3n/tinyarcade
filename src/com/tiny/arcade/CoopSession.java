@@ -39,7 +39,7 @@ public final class CoopSession {
     private static final long HEARTBEAT_MS = 4000L;
     private static final long OFFLINE_MS = 30000L;
     private static final long ACTIVATION_MS = 30000L;
-    private static final long ROOM_TIMEOUT_MS = 300000L;
+    private static final long ROOM_TIMEOUT_MS = 600000L;
 
     public interface Listener {
         void onCoopState(CoopSession session, State state);
@@ -364,6 +364,7 @@ public final class CoopSession {
             HttpResult r = http("PUT", roomPath(code), room, authToken);
             if (r.status == 200) {
                 freshHost = false;
+                lastOpponentSeen = SystemClock.uptimeMillis();
                 State s = new State();
                 s.status = "waiting";
                 s.hostUid = authUid;
@@ -395,11 +396,16 @@ public final class CoopSession {
         }
         JSONObject obj = new JSONObject(fetched.body);
         State s = parseState(obj);
+        if (roomExpired(s)) {
+            http("DELETE", roomPath(code), null, authToken);
+            clearSaved(context, gameKey);
+            throw new IOException("That room expired after 10 minutes of inactivity.");
+        }
         hostColor = s.hostColor == -1 ? -1 : 1;
 
         if (host) {
             if (!authUid.equals(s.hostUid)) throw new IOException("This room belongs to another host.");
-            if (s.hasGuest() && guestFresh(s)) lastOpponentSeen = SystemClock.uptimeMillis();
+            lastOpponentSeen = SystemClock.uptimeMillis();
             publish(s);
             maybeActivate(gen, s);
             return;
@@ -509,7 +515,7 @@ public final class CoopSession {
                         patch.put(host ? "hostPing" : "guestPing",
                             new JSONObject().put(".sv", "timestamp"));
                         http("PATCH", roomPath(code), patch, authToken);
-                        if (state.isActive() && lastOpponentSeen > 0
+                        if (lastOpponentSeen > 0
                             && SystemClock.uptimeMillis() - lastOpponentSeen > ROOM_TIMEOUT_MS) {
                             expireRoom();
                             return;
@@ -628,6 +634,13 @@ public final class CoopSession {
         }
     }
 
+    private boolean roomExpired(State s) {
+        if (s == null) return false;
+        long latest = Math.max(s.hostPing, s.guestPing);
+        long age = latest > 0L ? System.currentTimeMillis() - latest : Long.MAX_VALUE;
+        return age >= ROOM_TIMEOUT_MS;
+    }
+
     private void touchOpponent(State next, boolean initial) {
         State old = state;
         long now = SystemClock.uptimeMillis();
@@ -659,7 +672,7 @@ public final class CoopSession {
         }, "coop-expire");
         t.setDaemon(true);
         t.start();
-        postError("Room closed after 5 minutes of inactivity.");
+        postError("Room closed after 10 minutes of inactivity.");
     }
 
     private void publish(State s) {

@@ -9,7 +9,7 @@
 
   <br><br>
 
-  [![Download](https://img.shields.io/badge/Download_TinyArcade-v1.0.1-D48837?style=for-the-badge&logo=android&logoColor=white)](https://github.com/R1y3n/tinyarcade/releases/latest)
+  [![Download](https://img.shields.io/badge/Download_TinyArcade-v1.0.2-D48837?style=for-the-badge&logo=android&logoColor=white)](https://github.com/R1y3n/tinyarcade/releases/latest)
   [![All-time downloads](https://img.shields.io/github/downloads/R1y3n/tinyarcade/total?style=for-the-badge&color=2E6B4E&logo=github&label=total_downloads)](https://github.com/R1y3n/tinyarcade/releases)
   [![Stars](https://img.shields.io/github/stars/R1y3n/tinyarcade?style=for-the-badge&color=3F628A&logo=github)](https://github.com/R1y3n/tinyarcade/stargazers)
 
@@ -49,7 +49,7 @@ TinyArcade is a small arcade built from scratch: a full chess engine, checkers, 
 3. Or install over USB:
 
 ```bash
-adb install -r TinyArcade-v1.0.1.apk
+adb install -r TinyArcade-v1.0.2.apk
 ```
 
 The APK is signed with a local debug key for sideloading and personal use.
